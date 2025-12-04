@@ -72,6 +72,19 @@ ecommerce-backend/
 ├── .env
 └── README.md
 ```
+---
+
+
+
+# 🧩 Tech Stack
+
+- Node.js
+- Express.js
+- MongoDB + Mongoose
+- Swagger (OpenAPI 3.0)
+- ES Modules
+- MVC Architecture
+- Nodemon (Development)
 
 ---
 
@@ -111,12 +124,3 @@ npm start
 - This interactive documentation is generated using swagger-jsdoc + swagger-ui-express.
 
 
-# 🧩 Tech Stack
-
-- Node.js
-- Express.js
-- MongoDB + Mongoose
-- Swagger (OpenAPI 3.0)
-- ES Modules
-- MVC Architecture
-- Nodemon (Development)
