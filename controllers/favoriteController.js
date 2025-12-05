@@ -1,24 +1,3 @@
-// import Favorite from "../models/favoriteModel.js";
-
-// // Add Products to the favourites
-// export const addToFavorites = async (req, res)=>{
-//     const {productId} =req.body;
-//     const favItem =new Favorite({ productId });
-//     await favItem.save();
-//     res.status(201).json({message:"Product Added to the favorite"})
-// };
-
-// //Get all favorite items                      
-// export const getFavorites =async (req, res) =>{
-//     const favorites= await Favorite.find().populate("productId");
-//     res.json(favorites);
-// }  
-
-
-
-
-
-
 // src/controllers/favoriteController.js
 import Favorite from "../models/favoriteModel.js";
 import Product from "../models/productModel.js";
@@ -26,7 +5,7 @@ import mongoose from "mongoose";
 
 // @desc    Add item to favorites
 // @route   POST /api/favorites
-export const addFavorite = async (req, res) => {
+export const addToFavorite = async (req, res) => {
   const { productId } = req.body;
 
   if (!mongoose.isValidObjectId(productId)) {
