@@ -66,7 +66,7 @@
 
 // src/routes/cartRoutes.js
 import express from "express";
-import { addToCart,getCartItems,removeCartItem } from "../controllers/cartController.js";
+import { addToCart,getCartItems,removeCartItem,updateCartItem } from "../controllers/cartController.js";
 
 import { validateAddToCart } from "../middleware/validators/cartValidator.js";
 
@@ -80,5 +80,8 @@ router.get("/", getCartItems);
 
 // Remove an item from cart
 router.delete("/:id", removeCartItem);
+
+// Update item quantity in cart
+router.put("/:id", updateCartItem);
 
 export default router;

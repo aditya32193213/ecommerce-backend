@@ -73,3 +73,27 @@ export const removeCartItem = async (req, res) => {
     message: "Item removed from cart",
   });
 };
+
+// @desc    Update cart item quantity
+// @route   PUT /api/cart/:id
+export const updateCartItem = async (req, res) => {
+  const { id } = req.params;
+  const { quantity } = req.body;
+
+  try {
+    const cartItem = await CartItem.findByIdAndUpdate(
+      id,
+      { qty: quantity },
+      { new: true }
+    ).populate("product");
+
+    if (!cartItem) {
+      return res.status(404).json({ message: "Cart item not found" });
+    }
+
+    const cartItems = await CartItem.find().populate("product").lean();
+    res.status(200).json(cartItems);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
