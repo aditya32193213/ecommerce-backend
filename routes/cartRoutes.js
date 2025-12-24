@@ -64,13 +64,19 @@
  */
 
 
-// src/routes/cartRoutes.js
 import express from "express";
-import { addToCart,getCartItems,removeCartItem,updateCartItem } from "../controllers/cartController.js";
-
+import { 
+  addToCart, 
+  getCartItems, 
+  removeCartItem, 
+  updateCartItem 
+} from "../controllers/cartController.js";
 import { validateAddToCart } from "../middleware/validators/cartValidator.js";
+import { protect } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
+
+router.use(protect);
 
 // Add item to cart
 router.post("/", validateAddToCart, addToCart);
@@ -78,8 +84,8 @@ router.post("/", validateAddToCart, addToCart);
 // Get all cart items
 router.get("/", getCartItems);
 
-// Remove an item from cart
-router.delete("/:id", removeCartItem);
+// Remove an item from cart (Updated to use productId)
+router.delete("/:productId", removeCartItem);
 
 // Update item quantity in cart
 router.put("/:id", updateCartItem);

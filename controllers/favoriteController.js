@@ -1,47 +1,47 @@
-// src/controllers/favoriteController.js
 import Favorite from "../models/favoriteModel.js";
 import Product from "../models/productModel.js";
 import mongoose from "mongoose";
+
+// Helper: Get favorites for CURRENT USER only
+const getUserFavorites = async (userId) => {
+  return await Favorite.find({ user: userId }).populate("product").lean();
+};
 
 // @desc    Add item to favorites
 // @route   POST /api/favorites
 export const addToFavorite = async (req, res) => {
   const { productId } = req.body;
+  const userId = req.user._id; // <--- Get User ID
 
   if (!mongoose.isValidObjectId(productId)) {
     return res.status(400).json({ message: "Invalid productId format" });
   }
 
-  // Ensure product exists
   const product = await Product.findById(productId);
   if (!product) {
     return res.status(404).json({ message: "Product not found" });
   }
 
-  // Prevent duplicates
-  const exists = await Favorite.findOne({ product: productId });
-  if (exists) {
-    return res.status(200).json({
-      message: "Already in favorites",
-      item: exists,
+  // Check if THIS user already has this favorite
+  const exists = await Favorite.findOne({ user: userId, product: productId });
+  
+  if (!exists) {
+    await Favorite.create({ 
+        user: userId, // <--- Save User ID
+        product: productId 
     });
   }
 
-  const fav = await Favorite.create({ product: productId });
-
-  res.status(201).json({
-    message: "Added to favorites",
-    item: fav,
-  });
+  // Return full updated list for this user
+  const items = await getUserFavorites(userId);
+  res.status(201).json(items);
 };
 
 // @desc    Get all favorite items
 // @route   GET /api/favorites
 export const getFavorites = async (req, res) => {
-  const items = await Favorite.find()
-    .populate("product")
-    .lean();
-
+  const userId = req.user._id;
+  const items = await getUserFavorites(userId); // <--- Filter by User
   res.status(200).json(items);
 };
 
@@ -49,16 +49,20 @@ export const getFavorites = async (req, res) => {
 // @route   DELETE /api/favorites/:productId
 export const removeFromFavorites = async (req, res) => {
   const { productId } = req.params;
+  const userId = req.user._id;
 
   try {
-    const deleted = await Favorite.findOneAndDelete({ product: productId });
+    // Delete only if it belongs to this user
+    const deleted = await Favorite.findOneAndDelete({ 
+        user: userId, 
+        product: productId 
+    });
 
     if (!deleted) {
       return res.status(404).json({ message: "Item not found in favorites" });
     }
 
-    // Return updated list
-    const favorites = await Favorite.find().populate("product").lean();
+    const favorites = await getUserFavorites(userId);
     res.status(200).json(favorites);
   } catch (error) {
     res.status(500).json({ message: error.message });

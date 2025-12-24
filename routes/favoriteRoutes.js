@@ -47,8 +47,12 @@
 import express from "express";
 import { addToFavorite,getFavorites,removeFromFavorites } from "../controllers/favoriteController.js";
 import { validateFavorite } from "../middleware/validators/favoriteValidator.js";
+import { protect } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
+
+// Protect all favorite routes
+router.use(protect);
 
 // Add to favorites
 router.post("/", validateFavorite, addToFavorite);

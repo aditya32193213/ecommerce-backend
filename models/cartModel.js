@@ -2,6 +2,12 @@ import mongoose from "mongoose";
 
 const cartItemSchema = new mongoose.Schema(
   {
+    // NEW: Link this item to a specific user
+    user: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true, 
+    },
     product: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Product",

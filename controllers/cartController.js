@@ -1,98 +1,110 @@
-// src/controllers/cartController.js
 import CartItem from "../models/cartModel.js";
 import Product from "../models/productModel.js";
 import mongoose from "mongoose";
 
+// Helper: Get full cart for the current logged-in user
+const getUserCart = async (userId) => {
+  return await CartItem.find({ user: userId })
+    .populate("product")
+    .lean();
+};
+
 // @desc    Add item to cart
 // @route   POST /api/cart
-// @access  Public (for capstone)
+// @access  Private
 export const addToCart = async (req, res) => {
   const { productId, qty = 1 } = req.body;
+  const userId = req.user._id; // Retrieved from 'protect' middleware
 
-  // Validate ObjectId format
+  // 1. Validate Product ID format
   if (!mongoose.isValidObjectId(productId)) {
     return res.status(400).json({ message: "Invalid productId format" });
   }
 
-  // Check if product exists
+  // 2. Ensure product actually exists
   const product = await Product.findById(productId);
   if (!product) {
     return res.status(404).json({ message: "Product not found" });
   }
 
-  // Check if already in cart
-  let cartItem = await CartItem.findOne({ product: productId });
+  // 3. Check if this specific user already has this item
+  let cartItem = await CartItem.findOne({ user: userId, product: productId });
 
   if (cartItem) {
+    // Update existing quantity
     cartItem.qty += qty;
     await cartItem.save();
-    return res.status(200).json({
-      message: "Quantity updated in cart",
-      item: cartItem,
+  } else {
+    // Create new cart entry linked to this user
+    await CartItem.create({
+      user: userId,
+      product: productId,
+      qty,
     });
   }
 
-  // Create new cart entry
-  cartItem = await CartItem.create({
-    product: productId,
-    qty,
-  });
-
-  res.status(201).json({
-    message: "Item added to cart",
-    item: cartItem,
-  });
+  // 4. Return the full updated list
+  const items = await getUserCart(userId);
+  res.status(201).json(items);
 };
 
 // @desc    Get all cart items
 // @route   GET /api/cart
+// @access  Private
 export const getCartItems = async (req, res) => {
-  const items = await CartItem.find()
-    .populate("product")
-    .lean();
-
+  const userId = req.user._id;
+  const items = await getUserCart(userId);
   res.status(200).json(items);
 };
 
 // @desc    Remove cart item
-// @route   DELETE /api/cart/:id
+// @route   DELETE /api/cart/:productId
+// @access  Private
 export const removeCartItem = async (req, res) => {
-  const { id } = req.params;
+  const { productId } = req.params;
+  const userId = req.user._id;
 
-  if (!mongoose.isValidObjectId(id)) {
-    return res.status(400).json({ message: "Invalid cart item ID" });
+  if (!mongoose.isValidObjectId(productId)) {
+    return res.status(400).json({ message: "Invalid product ID" });
   }
 
-  const deleted = await CartItem.findByIdAndDelete(id);
+  // Delete item matching BOTH the user and the product
+  const deleted = await CartItem.findOneAndDelete({ 
+    user: userId, 
+    product: productId 
+  });
 
   if (!deleted) {
-    return res.status(404).json({ message: "Cart item not found" });
+    return res.status(404).json({ message: "Item not found in your cart" });
   }
 
-  res.status(200).json({
-    message: "Item removed from cart",
-  });
+  // Return the full updated list
+  const items = await getUserCart(userId);
+  res.status(200).json(items);
 };
 
 // @desc    Update cart item quantity
 // @route   PUT /api/cart/:id
+// @access  Private
 export const updateCartItem = async (req, res) => {
-  const { id } = req.params;
-  const { qty } = req.body; // CHANGED to 'qty' to match your model
+  const { id } = req.params; // This is the CartItem ID (_id)
+  const { qty } = req.body;
+  const userId = req.user._id;
 
   try {
-    const cartItem = await CartItem.findByIdAndUpdate(
-      id,
+    // Find item by ID AND User (security check)
+    const cartItem = await CartItem.findOneAndUpdate(
+      { _id: id, user: userId }, 
       { qty },
       { new: true }
-    ).populate("product");
+    );
 
     if (!cartItem) {
-      return res.status(404).json({ message: "Cart item not found" });
+      return res.status(404).json({ message: "Cart item not found or not authorized" });
     }
 
     // Return the full updated list
-    const items = await CartItem.find().populate("product").lean();
+    const items = await getUserCart(userId);
     res.status(200).json(items);
   } catch (error) {
     res.status(500).json({ message: error.message });
