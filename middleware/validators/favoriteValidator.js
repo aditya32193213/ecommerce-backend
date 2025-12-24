@@ -1,4 +1,3 @@
-// src/middleware/validators/favoriteValidator.js
 import mongoose from "mongoose";
 
 export const validateFavorite = (req, res, next) => {

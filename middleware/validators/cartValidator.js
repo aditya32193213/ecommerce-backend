@@ -1,4 +1,3 @@
-// src/middleware/validators/cartValidator.js
 import mongoose from "mongoose";
 
 export const validateAddToCart = (req, res, next) => {
