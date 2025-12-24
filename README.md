@@ -77,9 +77,8 @@ ecommerce-backend/
 ├── .env
 └── README.md
 ```
+
 ---
-
-
 
 # 🧩 Tech Stack
 
@@ -123,9 +122,9 @@ npm run dev
 ```bash
 npm start
 ```
-
+---
 
 ### 📘 API Documentation (Swagger UI)
 - This interactive documentation is generated using swagger-jsdoc + swagger-ui-express.
 
-
+---
