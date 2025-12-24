@@ -1,34 +1,112 @@
-// src/models/productModel.js
+// // src/models/productModel.js
+// import mongoose from "mongoose";
+
+// const productSchema = new mongoose.Schema(
+//   {
+//     title: {
+//       type: String,
+//       required: [true, "Product title is required"],
+//     },
+//     price: {
+//       type: Number,
+//       required: [true, "Product price is required"],
+//     },
+//     category: {
+//       type: String,
+//       required: [true, "Category is required"],
+//       index: true,
+//     },
+//     image: {
+//       type: String,
+//       default: "",
+//     },
+//     description: {
+//       type: String,
+//       default: "",
+//     },
+//     rating: {
+//       type: Number,
+//       default: 0,
+//     },
+//   },
+//   { timestamps: true }
+// );
+
+// export default mongoose.model("Product", productSchema);
+
+
+
+
+
+
+
+
+
+
+
+// import mongoose from "mongoose";
+
+// const productSchema = new mongoose.Schema({
+//   id: Number,
+//   title: String,
+//   price: Number,
+//   description: String,
+//   category: String,
+//   image: String,
+//   rating: {
+//     rate: Number,
+//     count: Number
+//   }
+// });
+
+// export default mongoose.model("Product", productSchema);
+
+
+
 import mongoose from "mongoose";
 
 const productSchema = new mongoose.Schema(
   {
+    // MongoDB will auto-generate _id — no need for id field
     title: {
       type: String,
-      required: [true, "Product title is required"],
+      required: true,
+      trim: true,
     },
+
     price: {
       type: Number,
-      required: [true, "Product price is required"],
+      required: true,
     },
-    category: {
-      type: String,
-      required: [true, "Category is required"],
-      index: true,
-    },
-    image: {
-      type: String,
-      default: "",
-    },
+
     description: {
       type: String,
       default: "",
     },
+
+    category: {
+      type: String,
+      required: true,
+      index: true,
+    },
+
+    image: {
+      type: String,
+      default: "",
+    },
+
     rating: {
-      type: Number,
-      default: 0,
+      rate: {
+        type: Number,
+        default: 0,
+      },
+      count: {
+        type: Number,
+        default: 0,
+      },
     },
   },
+
   { timestamps: true }
 );
 

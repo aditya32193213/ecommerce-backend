@@ -1,4 +1,3 @@
-// src/models/cartModel.js
 import mongoose from "mongoose";
 
 const cartItemSchema = new mongoose.Schema(

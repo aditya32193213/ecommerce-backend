@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "nodemon index.js",
     "start": "node index.js",
-    "lint": "eslint . --ext .js"
+    "lint": "eslint . --ext .js",
+    "seed": "node seeds/seedProducts.js"
   },
   "dependencies": {
     "cors": "^2.8.5",

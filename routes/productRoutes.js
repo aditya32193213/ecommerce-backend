@@ -42,16 +42,25 @@
  *         description: No products found for this category
  */
 
-// src/routes/productRoutes.js
 import express from "express";
-import { getAllProducts, getProductsByCategory } from "../controllers/productController.js";
+import {
+  getAllProducts,
+  getProductsByCategory,
+  getAllCategories,getProductById
+} from "../controllers/productController.js";
 
 const router = express.Router();
 
 // GET all products
 router.get("/", getAllProducts);
 
-// GET products by category (electronics, fashion, etc.)
+// GET all unique categories
+router.get("/categories", getAllCategories);
+
+// GET products by category
 router.get("/:category", getProductsByCategory);
 
+router.get("/single/:id", getProductById);
+
 export default router;
+

@@ -7,7 +7,7 @@ import "express-async-errors";
 // Routes
 import productRoutes from "./routes/productRoutes.js";
 import cartRoutes from "./routes/cartRoutes.js";
-import favoriteRoutes from "./routes/favoriteroutes.js";
+import favoriteRoutes from "./routes/favoriteRoutes.js";
 
 // Middlewares
 import { errorHandler } from "./middleware/errorHandler.js";
