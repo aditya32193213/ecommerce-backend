@@ -41,26 +41,54 @@
  *       404:
  *         description: No products found for this category
  */
-
 import express from "express";
+// 1. IMPORT MIDDLEWARE (Fixing the missing import error)
+import { protect, admin } from "../middleware/authMiddleware.js"; 
 import {
   getAllProducts,
   getProductsByCategory,
-  getAllCategories,getProductById
+  getAllCategories,
+  getProductById,
+  deleteProduct,
+  createProduct,
+  updateProduct,
 } from "../controllers/productController.js";
 
 const router = express.Router();
 
-// GET all products
-router.get("/", getAllProducts);
+/**
+ * @route   GET /api/products
+ * @desc    Get all products
+ * @route   POST /api/products
+ * @desc    Create a product (Admin only)
+ */
+router.route("/")
+  .get(getAllProducts)
+  .post(protect, admin, createProduct); // <--- FIXED: Added Create Route
 
-// GET all unique categories
+/**
+ * @route   GET /api/products/categories
+ * @desc    Get all unique categories
+ */
 router.get("/categories", getAllCategories);
 
-// GET products by category
-router.get("/:category", getProductsByCategory);
 
-router.get("/single/:id", getProductById);
+/**
+ * @route   GET /api/products/:category
+ * @desc    Get products by category
+ * @note    We place this specific GET route before the generic /:id route 
+ * to avoid ID collisions if needed, though usually IDs are unique.
+ */
+router.get("/category/:category", getProductsByCategory);
+
+/**
+ * @route   GET / DELETE / PUT /api/products/:id
+ * @desc    Admin operations (Delete, Update)
+ */
+router
+  .route("/:id")
+  .get(getProductById) // Optional: Standard REST fetch
+  .delete(protect, admin, deleteProduct) // Admin delete
+  .put(protect, admin, updateProduct);   // Admin update
 
 export default router;
-

@@ -87,20 +87,20 @@ export const removeCartItem = async (req, res) => {
 // @route   PUT /api/cart/:id
 // @access  Private
 export const updateCartItem = async (req, res) => {
-  const { id } = req.params; // This is the CartItem ID (_id)
+  // We now expect 'id' in the URL to be the PRODUCT ID, not CartItem ID
+  const { id } = req.params; 
   const { qty } = req.body;
   const userId = req.user._id;
 
   try {
-    // Find item by ID AND User (security check)
     const cartItem = await CartItem.findOneAndUpdate(
-      { _id: id, user: userId }, 
+      { product: id, user: userId }, // Find by Product + User
       { qty },
       { new: true }
     );
 
     if (!cartItem) {
-      return res.status(404).json({ message: "Cart item not found or not authorized" });
+      return res.status(404).json({ message: "Item not found in cart" });
     }
 
     // Return the full updated list

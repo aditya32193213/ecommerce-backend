@@ -13,7 +13,7 @@ const options = {
 
     servers: [
       {
-        url: "http://localhost:10000",
+        url: "https://ecommerce-backend-hen7.onrender.com",
         description: "Local Development Server"
       }
     ],
@@ -29,7 +29,7 @@ const options = {
             category: { type: "string", description: "Product category" },
             image: { type: "string", description: "Product image URL" },
             description: { type: "string", description: "Product description" },
-            rating: { type: "number", description: "Product rating" }
+            rating: { type: "object", description: "Product rating" }
           }
         },
 
@@ -74,7 +74,7 @@ const options = {
   apis: [
     "./routes/*.js",
     "./src/routes/*.js",
-    "./src/controllers/*.js"
+    "./controllers/*.js"
   ]
 };
 

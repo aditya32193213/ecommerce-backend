@@ -2,6 +2,11 @@ import mongoose from "mongoose";
 
 const productSchema = new mongoose.Schema(
   {
+    user: {
+      type: mongoose.Schema.Types.ObjectId,
+      required: true,
+      ref: "User",
+    },
     title: {
       type: String,
       required: true,
@@ -38,6 +43,11 @@ const productSchema = new mongoose.Schema(
         type: Number,
         default: 0,
       },
+    },
+    countInStock: {
+      type: Number,
+      required: true,
+      default: 0,
     },
   },
 

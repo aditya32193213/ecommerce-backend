@@ -6,10 +6,8 @@ export default [
     "description": "Your perfect pack for everyday use and walks in the forest. Stash your laptop (up to 15 inches) in the padded sleeve, your everyday",
     "category": "men's clothing",
     "image": "https://fakestoreapi.com/img/81fPKd-2AYL._AC_SL1500_t.png",
-    "rating": {
-      "rate": 3.9,
-      "count": 120
-    }
+    "rating": {"rate": 3.9,"count": 120 },
+    "countInStock": 20
   },
   {
     
@@ -21,7 +19,8 @@ export default [
     "rating": {
       "rate": 4.1,
       "count": 259
-    }
+    },
+    "countInStock": 20
   },
   {
     
@@ -33,7 +32,8 @@ export default [
     "rating": {
       "rate": 4.7,
       "count": 500
-    }
+    },
+    "countInStock": 20
   },
   {
     
@@ -45,7 +45,8 @@ export default [
     "rating": {
       "rate": 2.1,
       "count": 430
-    }
+    },
+    "countInStock": 20
   },
   {
     
@@ -57,7 +58,8 @@ export default [
     "rating": {
       "rate": 4.6,
       "count": 400
-    }
+    },
+    "countInStock": 20
   },
   {
     
@@ -69,7 +71,8 @@ export default [
     "rating": {
       "rate": 3.9,
       "count": 70
-    }
+    },
+    "countInStock": 20
   },
   {
     
@@ -81,7 +84,8 @@ export default [
     "rating": {
       "rate": 3,
       "count": 400
-    }
+    },
+    "countInStock": 20
   },
   {
     
@@ -93,7 +97,8 @@ export default [
     "rating": {
       "rate": 1.9,
       "count": 100
-    }
+    },
+    "countInStock": 20
   },
   {
     
@@ -105,7 +110,8 @@ export default [
     "rating": {
       "rate": 3.3,
       "count": 203
-    }
+    },
+    "countInStock": 20
   },
   {
     
@@ -117,7 +123,8 @@ export default [
     "rating": {
       "rate": 2.9,
       "count": 470
-    }
+    },
+    "countInStock": 20
   },
   {
     
@@ -129,7 +136,8 @@ export default [
     "rating": {
       "rate": 4.8,
       "count": 319
-    }
+    },
+    "countInStock": 20
   },
   {
     
@@ -141,7 +149,8 @@ export default [
     "rating": {
       "rate": 4.8,
       "count": 400
-    }
+    },
+    "countInStock": 20
   },
   {
     
@@ -153,7 +162,8 @@ export default [
     "rating": {
       "rate": 2.9,
       "count": 250
-    }
+    },
+    "countInStock": 20
   },
   {
     
@@ -165,7 +175,8 @@ export default [
     "rating": {
       "rate": 2.2,
       "count": 140
-    }
+    },
+    "countInStock": 20
   },
   {
     
@@ -177,7 +188,8 @@ export default [
     "rating": {
       "rate": 2.6,
       "count": 235
-    }
+    },
+    "countInStock": 20
   },
   {
     
@@ -189,7 +201,8 @@ export default [
     "rating": {
       "rate": 2.9,
       "count": 340
-    }
+    },
+    "countInStock": 20
   },
   {
     
@@ -201,7 +214,8 @@ export default [
     "rating": {
       "rate": 3.8,
       "count": 679
-    }
+    },
+    "countInStock": 20
   },
   {
     
@@ -213,7 +227,8 @@ export default [
     "rating": {
       "rate": 4.7,
       "count": 130
-    }
+    },
+    "countInStock": 20
   },
   {
     
@@ -225,7 +240,8 @@ export default [
     "rating": {
       "rate": 4.5,
       "count": 146
-    }
+    },
+    "countInStock": 20
   },
   {
     
@@ -237,6 +253,7 @@ export default [
     "rating": {
       "rate": 3.6,
       "count": 145
-    }
+    },
+    "countInStock": 20
   }
 ];
