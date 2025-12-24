@@ -78,12 +78,12 @@ export const removeCartItem = async (req, res) => {
 // @route   PUT /api/cart/:id
 export const updateCartItem = async (req, res) => {
   const { id } = req.params;
-  const { quantity } = req.body;
+  const { qty } = req.body; // CHANGED to 'qty' to match your model
 
   try {
     const cartItem = await CartItem.findByIdAndUpdate(
       id,
-      { qty: quantity },
+      { qty },
       { new: true }
     ).populate("product");
 
@@ -91,8 +91,9 @@ export const updateCartItem = async (req, res) => {
       return res.status(404).json({ message: "Cart item not found" });
     }
 
-    const cartItems = await CartItem.find().populate("product").lean();
-    res.status(200).json(cartItems);
+    // Return the full updated list
+    const items = await CartItem.find().populate("product").lean();
+    res.status(200).json(items);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
