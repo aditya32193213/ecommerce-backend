@@ -44,3 +44,23 @@ export const getFavorites = async (req, res) => {
 
   res.status(200).json(items);
 };
+
+// @desc    Remove item from favorites
+// @route   DELETE /api/favorites/:productId
+export const removeFromFavorites = async (req, res) => {
+  const { productId } = req.params;
+
+  try {
+    const deleted = await Favorite.findOneAndDelete({ product: productId });
+
+    if (!deleted) {
+      return res.status(404).json({ message: "Item not found in favorites" });
+    }
+
+    // Return updated list
+    const favorites = await Favorite.find().populate("product").lean();
+    res.status(200).json(favorites);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};

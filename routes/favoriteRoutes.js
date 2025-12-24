@@ -45,7 +45,7 @@
 
 // src/routes/favoriteroutes.js
 import express from "express";
-import { addToFavorite,getFavorites } from "../controllers/favoriteController.js";
+import { addToFavorite,getFavorites,removeFromFavorites } from "../controllers/favoriteController.js";
 import { validateFavorite } from "../middleware/validators/favoriteValidator.js";
 
 const router = express.Router();
@@ -55,5 +55,8 @@ router.post("/", validateFavorite, addToFavorite);
 
 // Get all favorites
 router.get("/", getFavorites);
+
+// Delete favorite
+router.delete("/:productId", removeFromFavorites);
 
 export default router;
