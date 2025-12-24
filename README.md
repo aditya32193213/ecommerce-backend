@@ -7,11 +7,13 @@ It provides APIs for **Products**, **Cart**, and **Favorites**, along with compl
 ---
 
 # 🌐 Live Backend API  
-🔗 **[https://ecommerce-backend-hen7.onrender.com](https://ecommerce-backend-hen7.onrender.com)**
+- 🔗 **[https://ecommerce-backend-hen7.onrender.com](https://ecommerce-backend-hen7.onrender.com)**
+
+---
 
 # 📄 API Documentation (Swagger)
 - This interactive documentation is generated using swagger-jsdoc + swagger-ui-express.
- 🔗 **[https://ecommerce-backend-hen7.onrender.com/api/docs](https://ecommerce-backend-hen7.onrender.com/api/docs)**
+- 🔗 **[https://ecommerce-backend-hen7.onrender.com/api/docs](https://ecommerce-backend-hen7.onrender.com/api/docs)**
 
 ---
 
