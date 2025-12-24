@@ -7,7 +7,7 @@ It provides APIs for **Products**, **Cart**, and **Favorites**, along with compl
 ---
 
 # 🌐 Live Backend API  
-🔗 **[https://ai-orchestrator-backend-f0k6.onrender.com](https://ecommerce-backend-hen7.onrender.com/)**
+🔗 **[https://ecommerce-backend-hen7.onrender.com](https://ecommerce-backend-hen7.onrender.com)**
 
 ---
 
