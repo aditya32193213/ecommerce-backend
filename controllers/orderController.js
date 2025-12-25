@@ -13,6 +13,9 @@ export const createOrder = async (req, res) => {
     taxPrice,
     shippingPrice,
     totalPrice,
+    isPaid,
+    paidAt,
+    paymentResult,
   } = req.body;
 
   if (!orderItems || orderItems.length === 0) {
@@ -47,6 +50,9 @@ export const createOrder = async (req, res) => {
     taxPrice,
     shippingPrice,
     totalPrice,
+    isPaid: req.body.isPaid || false,
+    paidAt: req.body.paidAt,
+    paymentResult: req.body.paymentResult,
   });
 
   // Decrement stock safely
