@@ -14,7 +14,7 @@ const getUserCart = async (userId) => {
 // @access  Private
 export const addToCart = async (req, res) => {
   const { productId, qty = 1 } = req.body;
-  const userId = req.user._id; // Retrieved from 'protect' middleware
+  const userId = req.user._id; 
 
   // 1. Validate Product ID format
   if (!mongoose.isValidObjectId(productId)) {
@@ -27,12 +27,29 @@ export const addToCart = async (req, res) => {
     return res.status(404).json({ message: "Product not found" });
   }
 
-  // 3. Check if this specific user already has this item
+  // 3. STOCK CHECK (New Fix)
+  // Check if requested quantity exceeds available stock immediately
+  if (product.countInStock < qty) {
+    return res.status(400).json({ 
+        message: `Not enough stock. Only ${product.countInStock} available.` 
+    });
+  }
+
+  // 4. Check if this specific user already has this item
   let cartItem = await CartItem.findOne({ user: userId, product: productId });
 
   if (cartItem) {
+    // 5. CUMULATIVE STOCK CHECK (New Fix)
+    // If they already have 2 and want to add 3, make sure we have 5 total
+    const newTotalQty = cartItem.qty + qty;
+    if (product.countInStock < newTotalQty) {
+        return res.status(400).json({ 
+            message: `Cannot add item. You have ${cartItem.qty} in cart and only ${product.countInStock} are in stock.` 
+        });
+    }
+
     // Update existing quantity
-    cartItem.qty += qty;
+    cartItem.qty = newTotalQty;
     await cartItem.save();
   } else {
     // Create new cart entry linked to this user
@@ -43,7 +60,7 @@ export const addToCart = async (req, res) => {
     });
   }
 
-  // 4. Return the full updated list
+  // 6. Return the full updated list
   const items = await getUserCart(userId);
   res.status(201).json(items);
 };
@@ -87,14 +104,29 @@ export const removeCartItem = async (req, res) => {
 // @route   PUT /api/cart/:id
 // @access  Private
 export const updateCartItem = async (req, res) => {
-  // We now expect 'id' in the URL to be the PRODUCT ID, not CartItem ID
+  // 'id' in the URL is the PRODUCT ID
   const { id } = req.params; 
   const { qty } = req.body;
   const userId = req.user._id;
 
   try {
+    // 1. Fetch product to check stock availability (New Fix)
+    const product = await Product.findById(id);
+    
+    if (!product) {
+        return res.status(404).json({ message: "Product not found" });
+    }
+
+    // 2. Validate Stock before updating
+    if (product.countInStock < qty) {
+        return res.status(400).json({ 
+            message: `Not enough stock. Only ${product.countInStock} available.` 
+        });
+    }
+
+    // 3. Perform Update
     const cartItem = await CartItem.findOneAndUpdate(
-      { product: id, user: userId }, // Find by Product + User
+      { product: id, user: userId }, 
       { qty },
       { new: true }
     );

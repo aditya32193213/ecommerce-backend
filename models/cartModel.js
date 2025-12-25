@@ -22,4 +22,6 @@ const cartItemSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+cartItemSchema.index({ user: 1, product: 1 }, { unique: true });
+
 export default mongoose.model("CartItem", cartItemSchema);

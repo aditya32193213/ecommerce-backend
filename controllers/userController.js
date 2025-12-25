@@ -1,67 +1,68 @@
 import User from "../models/userModel.js";
+import jwt from "jsonwebtoken";
 
 // @desc    Get user profile
-// @route   GET /api/users/profile
-// @access  Private
 export const getUserProfile = async (req, res) => {
   const user = await User.findById(req.user._id);
 
-  if (user) {
-    res.json({
-      _id: user._id,
-      name: user.name,
-      email: user.email,
-      isAdmin: user.isAdmin,
-    });
-  } else {
+  if (!user) {
     res.status(404);
     throw new Error("User not found");
   }
+
+  res.json({
+    _id: user._id,
+    name: user.name,
+    email: user.email,
+    isAdmin: user.isAdmin,
+  });
 };
 
 // @desc    Update user profile
-// @route   PUT /api/users/profile
-// @access  Private
 export const updateUserProfile = async (req, res) => {
   const user = await User.findById(req.user._id);
 
-  if (user) {
-    user.name = req.body.name || user.name;
-    user.email = req.body.email || user.email;
-
-    // Only update password if sent
-    if (req.body.password) {
-      user.password = req.body.password;
-    }
-
-    const updatedUser = await user.save();
-
-    res.json({
-      _id: updatedUser._id,
-      name: updatedUser.name,
-      email: updatedUser.email,
-      isAdmin: updatedUser.isAdmin,
-      token: req.token, // Keep the same token
-    });
-  } else {
+  if (!user) {
     res.status(404);
     throw new Error("User not found");
   }
+
+  user.name = req.body.name || user.name;
+  user.email = req.body.email?.toLowerCase() || user.email;
+
+  if (req.body.password) {
+    user.password = req.body.password; // This triggers the pre-save hash
+  }
+
+  const updatedUser = await user.save();
+
+  // Generate a fresh token with the updated info
+  const token = jwt.sign(
+    { id: updatedUser._id },
+    process.env.JWT_SECRET || "secret",
+    { expiresIn: "30d" }
+  );
+
+  res.json({
+    _id: updatedUser._id,
+    name: updatedUser.name,
+    email: updatedUser.email,
+    isAdmin: updatedUser.isAdmin,
+    token: token, // Send new token to frontend
+  });
 };
 
 // @desc    Save a new address
-// @route   POST /api/users/address
-// @access  Private
 export const saveAddress = async (req, res) => {
   const user = await User.findById(req.user._id);
 
-  if (user) {
-    const newAddress = req.body; // { name, street, city... }
-    user.addresses.push(newAddress);
-    await user.save();
-    res.json(user.addresses);
-  } else {
+  if (!user) {
     res.status(404);
     throw new Error("User not found");
   }
+
+  user.addresses.push(req.body);
+  await user.save();
+
+  res.json(user.addresses);
 };
