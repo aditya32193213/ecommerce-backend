@@ -68,6 +68,7 @@ import {
   getCartItems,
   removeCartItem,
   updateCartItem,
+  clearUserCart
 } from "../controllers/cartController.js";
 import { validateAddToCart } from "../middleware/validators/cartValidator.js";
 import { protect } from "../middleware/authMiddleware.js";
@@ -85,7 +86,12 @@ router.get("/", getCartItems);
 // Update quantity (✅ productId)
 router.put("/:productId", updateCartItem);
 
+// Cleat the cart
+router.delete("/", clearUserCart);
+
 // Remove item
 router.delete("/:productId", removeCartItem);
+
+
 
 export default router;
