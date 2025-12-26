@@ -14,9 +14,14 @@ const cartItemSchema = new mongoose.Schema(
       required: true,
     },
     qty: {
-      type: Number,
-      default: 1,
-      min: [1, "Quantity must be at least 1"],
+  type: Number,
+  required: true,
+  default: 1,
+  min: 1,
+  validate: {
+    validator: Number.isInteger,
+    message: "Quantity must be an integer",
+  },
     },
   },
   { timestamps: true }

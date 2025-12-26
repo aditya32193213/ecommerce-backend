@@ -16,6 +16,7 @@ const productSchema = new mongoose.Schema(
     price: {
       type: Number,
       required: true,
+      min: [0, "Price cannot be negative"],
     },
 
     description: {
@@ -44,10 +45,16 @@ const productSchema = new mongoose.Schema(
         default: 0,
       },
     },
+
     countInStock: {
-      type: Number,
-      required: true,
-      default: 0,
+    type: Number,
+    required: true,
+    default: 0,
+    min: [0, "Stock cannot be negative"],
+    validate: {
+    validator: Number.isInteger,
+    message: "Stock must be an integer",
+     },
     },
   },
 

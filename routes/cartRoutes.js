@@ -62,14 +62,12 @@
  *       404:
  *         description: Cart item not found
  */
-
-
 import express from "express";
-import { 
-  addToCart, 
-  getCartItems, 
-  removeCartItem, 
-  updateCartItem 
+import {
+  addToCart,
+  getCartItems,
+  removeCartItem,
+  updateCartItem,
 } from "../controllers/cartController.js";
 import { validateAddToCart } from "../middleware/validators/cartValidator.js";
 import { protect } from "../middleware/authMiddleware.js";
@@ -78,16 +76,16 @@ const router = express.Router();
 
 router.use(protect);
 
-// Add item to cart
+// Add item
 router.post("/", validateAddToCart, addToCart);
 
-// Get all cart items
+// Get cart
 router.get("/", getCartItems);
 
-// Remove an item from cart (Updated to use productId)
-router.delete("/:productId", removeCartItem);
+// Update quantity (✅ productId)
+router.put("/:productId", updateCartItem);
 
-// Update item quantity in cart
-router.put("/:id", updateCartItem);
+// Remove item
+router.delete("/:productId", removeCartItem);
 
 export default router;
