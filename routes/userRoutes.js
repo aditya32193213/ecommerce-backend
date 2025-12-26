@@ -73,5 +73,4 @@ router.put("/address/:addressId", protect, updateAddress);
 router.delete("/address/:addressId", protect, deleteAddress);
 
 
-
 export default router;
