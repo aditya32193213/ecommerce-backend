@@ -81,3 +81,48 @@ export const saveAddress = async (req, res) => {
     addresses: user.addresses,
   });
 };
+
+// @desc    Update an address
+export const updateAddress = async (req, res) => {
+  const user = await User.findById(req.user._id);
+
+  if (!user) {
+    res.status(404);
+    throw new Error("User not found");
+  }
+
+  const address = user.addresses.id(req.params.addressId);
+  if (!address) {
+    res.status(404);
+    throw new Error("Address not found");
+  }
+
+  Object.assign(address, req.body);
+  await user.save();
+
+  res.json({
+    message: "Address updated",
+    addresses: user.addresses,
+  });
+};
+
+// @desc    Delete an address
+export const deleteAddress = async (req, res) => {
+  const user = await User.findById(req.user._id);
+
+  if (!user) {
+    res.status(404);
+    throw new Error("User not found");
+  }
+
+  user.addresses = user.addresses.filter(
+    (addr) => addr._id.toString() !== req.params.addressId
+  );
+
+  await user.save();
+
+  res.json({
+    message: "Address deleted",
+    addresses: user.addresses,
+  });
+};

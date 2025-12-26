@@ -4,6 +4,8 @@ import {
   getUserProfile,
   updateUserProfile,
   saveAddress,
+  updateAddress,
+  deleteAddress
 } from "../controllers/userController.js";
 
 const router = express.Router();
@@ -66,6 +68,9 @@ router.put("/profile", protect, updateUserProfile);
  *         description: Address saved
  */
 router.post("/address", protect, saveAddress);
+
+router.put("/address/:addressId", protect, updateAddress);
+router.delete("/address/:addressId", protect, deleteAddress);
 
 
 
