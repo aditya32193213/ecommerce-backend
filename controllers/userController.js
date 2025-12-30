@@ -131,6 +131,8 @@ export const getUserMeta = async (req, res) => {
       return res.status(401).json({ message: "Unauthorized" });
     }
 
+    console.log("META DEBUG → userId:", userId);
+
     // 🔎 Find cart safely (supports user OR userId)
     const cart = await Cart.findOne({
       $or: [{ user: userId }, { userId }],
@@ -140,6 +142,9 @@ export const getUserMeta = async (req, res) => {
     const wishlist = await Favorite.findOne({
       $or: [{ user: userId }, { userId }],
     });
+
+    console.log("META DEBUG → cart doc:", JSON.stringify(cart, null, 2));
+    console.log("META DEBUG → wishlist doc:", JSON.stringify(wishlist, null, 2));
 
     // 🛡️ Safe array guards
     const cartItems = Array.isArray(cart?.items) ? cart.items : [];
