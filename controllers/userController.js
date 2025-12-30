@@ -136,15 +136,20 @@ export const getUserMeta = async (req, res) => {
   try {
     const userId = req.user._id;
 
-    const [cartCount, wishlistCount] = await Promise.all([
-      Cart.countDocuments({ user: userId }),
-      Favorite.countDocuments({ user: userId }),
-    ]);
+    const cart = await Cart.findOne({ user: userId }).lean();
+    const wishlistCount = await Favorite.countDocuments({ user: userId });
 
-    res.json({ cartCount, wishlistCount });
+    const cartCount = cart
+      ? cart.items.reduce((sum, item) => sum + item.quantity, 0)
+      : 0;
+
+    res.status(200).json({
+      cartCount,
+      wishlistCount
+    });
   } catch (error) {
-    console.error("META ERROR:", error);
-    res.status(500).json({ message: "Failed to load user meta" });
+    console.error("Meta API error:", error);
+    res.status(500).json({ message: "Failed to fetch user meta" });
   }
 };
 
