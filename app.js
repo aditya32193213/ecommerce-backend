@@ -23,7 +23,7 @@ const app = express();
 // 1. Security Headers (Helmet)
 // Helps secure your apps by setting various HTTP headers
 app.use(helmet());
-
+app.set("trust proxy", 1);
 // 2. CORS
 // In production, strictly define 'origin' instead of allowing all '*'
 app.use(cors({
