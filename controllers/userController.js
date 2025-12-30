@@ -1,6 +1,5 @@
 import User from "../models/userModel.js";
 import jwt from "jsonwebtoken";
-import CartItem from "../models/cartModel.js";
 import Favorite from "../models/favoriteModel.js";
 
 // @desc    Get user profile
@@ -133,18 +132,12 @@ export const deleteAddress = async (req, res) => {
 // @route   GET /api/users/meta
 // @access  Private
 export const getUserMeta = async (req, res) => {
-  const userId = req.user._id;
-
-  // Run queries in parallel for speed
   const [cartCount, wishlistCount] = await Promise.all([
-    CartItem.countDocuments({ user: userId }),
-    Favorite.countDocuments({ user: userId })
+    Cart.countDocuments({ user: req.user._id }),
+    Favorite.countDocuments({ user: req.user._id }),
   ]);
 
-  res.json({
-    cartCount,
-    wishlistCount
-  });
+  res.json({ cartCount, wishlistCount });
 };
 
 

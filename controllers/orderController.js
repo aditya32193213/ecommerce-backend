@@ -1,3 +1,4 @@
+import mongoose from "mongoose"; // Required for Transactions
 import Order from "../models/orderModel.js";
 import Product from "../models/productModel.js";
 
@@ -23,47 +24,64 @@ export const createOrder = async (req, res) => {
     throw new Error("No order items");
   }
 
-  // 🔒 FINAL STOCK RECHECK (CRITICAL FIX)
-  for (const item of orderItems) {
-    const product = await Product.findById(item.product);
+  // 1. Start a Database Session (Transaction)
+  const session = await mongoose.startSession();
+  session.startTransaction();
 
-    if (!product) {
-      res.status(404);
-      throw new Error("Product not found");
+  try {
+    // 2. Validate Stock & Deduct within the Session
+    for (const item of orderItems) {
+      // Pass { session } to ensure we are reading the latest data locked in this transaction
+      const product = await Product.findById(item.product).session(session);
+
+      if (!product) {
+        throw new Error("Product not found"); // Triggers catch block
+      }
+
+      if (product.countInStock < item.qty) {
+        throw new Error(
+          `Insufficient stock for ${product.title}. Only ${product.countInStock} left.`
+        );
+      }
+
+      // Deduct stock
+      product.countInStock -= item.qty;
+      await product.save({ session }); // Save changes within session
     }
 
-    if (product.countInStock < item.qty) {
-      res.status(400);
-      throw new Error(
-        `Insufficient stock for ${product.title}. Only ${product.countInStock} left.`
-      );
-    }
+    // 3. Create the Order
+    const order = new Order({
+      orderItems,
+      user: req.user._id,
+      shippingAddress,
+      paymentMethod,
+      itemsPrice,
+      taxPrice,
+      shippingPrice,
+      totalPrice,
+      isPaid: isPaid || false,
+      paidAt: paidAt || null,
+      paymentResult: paymentResult || {},
+    });
+
+    // Save order within the session
+    const createdOrder = await order.save({ session });
+
+    // 4. Commit Transaction (Make changes permanent)
+    await session.commitTransaction();
+    session.endSession();
+
+    res.status(201).json(createdOrder);
+
+  } catch (error) {
+    // 5. Abort Transaction (Undo EVERYTHING if any error occurs)
+    await session.abortTransaction();
+    session.endSession();
+    
+    // Pass the specific error message back to the client
+    res.status(400);
+    throw new Error(error.message);
   }
-
-  // Create order
-  const order = new Order({
-    orderItems,
-    user: req.user._id,
-    shippingAddress,
-    paymentMethod,
-    itemsPrice,
-    taxPrice,
-    shippingPrice,
-    totalPrice,
-    isPaid: req.body.isPaid || false,
-    paidAt: req.body.paidAt,
-    paymentResult: req.body.paymentResult,
-  });
-
-  // Decrement stock safely
-  for (const item of orderItems) {
-    const product = await Product.findById(item.product);
-    product.countInStock -= item.qty;
-    await product.save();
-  }
-
-  const createdOrder = await order.save();
-  res.status(201).json(createdOrder);
 };
 
 // @desc    Get logged in user orders
