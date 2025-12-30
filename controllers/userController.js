@@ -1,6 +1,7 @@
 import User from "../models/userModel.js";
 import jwt from "jsonwebtoken";
 import Favorite from "../models/favoriteModel.js";
+import Cart from "../models/cartModel.js";
 
 // @desc    Get user profile
 // @route   GET /api/users/profile
@@ -132,12 +133,19 @@ export const deleteAddress = async (req, res) => {
 // @route   GET /api/users/meta
 // @access  Private
 export const getUserMeta = async (req, res) => {
-  const [cartCount, wishlistCount] = await Promise.all([
-    Cart.countDocuments({ user: req.user._id }),
-    Favorite.countDocuments({ user: req.user._id }),
-  ]);
+  try {
+    const userId = req.user._id;
 
-  res.json({ cartCount, wishlistCount });
+    const [cartCount, wishlistCount] = await Promise.all([
+      Cart.countDocuments({ user: userId }),
+      Favorite.countDocuments({ user: userId }),
+    ]);
+
+    res.json({ cartCount, wishlistCount });
+  } catch (error) {
+    console.error("META ERROR:", error);
+    res.status(500).json({ message: "Failed to load user meta" });
+  }
 };
 
 
