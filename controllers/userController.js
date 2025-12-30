@@ -136,16 +136,23 @@ export const getUserMeta = async (req, res) => {
   try {
     const userId = req.user._id;
 
-    const cart = await Cart.findOne({ user: userId }).lean();
+    let cart = await Cart.findOne({ user: userId }).lean();
+
+    // ✅ Ensure cart always exists
+    if (!cart) {
+      cart = { items: [] };
+    }
+
     const wishlistCount = await Favorite.countDocuments({ user: userId });
 
-    const cartCount = cart
-      ? cart.items.reduce((sum, item) => sum + item.quantity, 0)
-      : 0;
+    const cartCount = cart.items.reduce(
+      (sum, item) => sum + Number(item.quantity || 0),
+      0
+    );
 
     res.status(200).json({
       cartCount,
-      wishlistCount
+      wishlistCount,
     });
   } catch (error) {
     console.error("Meta API error:", error);
