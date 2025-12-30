@@ -61,17 +61,49 @@ export const updateUserProfile = async (req, res) => {
 // ADD ADDRESS
 // ===================================
 export const saveAddress = async (req, res) => {
-  const user = await User.findById(req.user._id);
+  try {
+    const user = await User.findById(req.user._id);
 
-  if (!user) {
-    return res.status(404).json({ message: "User not found" });
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // ✅ Normalize frontend payload → DB schema
+    const normalizedAddress = {
+      name: req.body.name || "",
+      phone: req.body.phone || "",
+      street: req.body.address || "",        // 🔥 FIX
+      city: req.body.city || "",
+      state: req.body.state || "",
+      zip: req.body.postalCode || "",         // 🔥 FIX
+      country: req.body.country || "India",
+    };
+
+    // ✅ Validation safeguard
+    if (
+      !normalizedAddress.street ||
+      !normalizedAddress.city ||
+      !normalizedAddress.state ||
+      !normalizedAddress.zip
+    ) {
+      return res
+        .status(400)
+        .json({ message: "Incomplete address data" });
+    }
+
+    user.addresses.push(normalizedAddress);
+    await user.save();
+
+    res.status(201).json({
+      message: "Address saved successfully",
+      addresses: user.addresses,
+    });
+  } catch (error) {
+    console.error("Save address error:", error);
+    res.status(500).json({
+      message: "Failed to save address",
+    });
   }
-
-  user.addresses = user.addresses || [];
-  user.addresses.push(req.body);
-
-  const updatedUser = await user.save();
-  res.json({ message: "Address added", addresses: updatedUser.addresses });
 };
 
 // ===================================
