@@ -131,33 +131,18 @@ export const getUserMeta = async (req, res) => {
       return res.status(401).json({ message: "Unauthorized" });
     }
 
-    console.log("META DEBUG → userId:", userId);
+    // 🛒 Cart: multiple docs, each with qty
+    const cartDocs = await Cart.find({ user: userId });
 
-    // 🔎 Find cart safely (supports user OR userId)
-    const cart = await Cart.findOne({
-      $or: [{ user: userId }, { userId }],
-    });
-
-    // 🔎 Find wishlist safely
-    const wishlist = await Favorite.findOne({
-      $or: [{ user: userId }, { userId }],
-    });
-
-    console.log("META DEBUG → cart doc:", JSON.stringify(cart, null, 2));
-    console.log("META DEBUG → wishlist doc:", JSON.stringify(wishlist, null, 2));
-
-    // 🛡️ Safe array guards
-    const cartItems = Array.isArray(cart?.items) ? cart.items : [];
-    const wishlistItems = Array.isArray(wishlist?.products)
-      ? wishlist.products
-      : [];
-
-    const cartCount = cartItems.reduce(
-      (sum, item) => sum + (item.quantity || 0),
+    const cartCount = cartDocs.reduce(
+      (sum, item) => sum + (item.qty || 0),
       0
     );
 
-    const wishlistCount = wishlistItems.length;
+    // ❤️ Wishlist: one product per document
+    const wishlistCount = await Favorite.countDocuments({
+      user: userId,
+    });
 
     res.status(200).json({
       cartCount,
@@ -165,7 +150,8 @@ export const getUserMeta = async (req, res) => {
     });
   } catch (error) {
     console.error("Meta API error:", error);
-    res.status(500).json({ message: "Failed to fetch user meta" });
+    res.status(500).json({
+      message: "Failed to fetch user meta",
+    });
   }
 };
-
