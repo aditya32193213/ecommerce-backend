@@ -13,17 +13,11 @@ const getUserCart = async (userId) => {
 // @route   POST /api/cart
 // @access  Private
 export const addToCart = async (req, res) => {
+  // Input validation is already handled by 'validateAddToCart' middleware
   const { productId, qty = 1 } = req.body;
   const userId = req.user._id;
 
-  if (!mongoose.isValidObjectId(productId)) {
-    return res.status(400).json({ message: "Invalid productId format" });
-  }
-
-  if (!Number.isInteger(qty) || qty < 1) {
-    return res.status(400).json({ message: "Quantity must be at least 1" });
-  }
-
+  // 1. Check Stock
   const product = await Product.findById(productId);
   if (!product) {
     return res.status(404).json({ message: "Product not found" });
@@ -35,11 +29,13 @@ export const addToCart = async (req, res) => {
     });
   }
 
+  // 2. Add/Update Cart Logic
   let cartItem = await CartItem.findOne({ user: userId, product: productId });
 
   if (cartItem) {
     const newTotalQty = cartItem.qty + qty;
-
+    
+    // Check stock again for the total new quantity
     if (product.countInStock < newTotalQty) {
       return res.status(400).json({
         message: `Cannot add item. You have ${cartItem.qty} in cart and only ${product.countInStock} are in stock.`,

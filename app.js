@@ -3,19 +3,12 @@ import cors from "cors";
 import morgan from "morgan";
 import "express-async-errors";
 
-// Routes
-import productRoutes from "./routes/productRoutes.js";
-import cartRoutes from "./routes/cartRoutes.js";
-import favoriteRoutes from "./routes/favoriteRoutes.js";
-import authRoutes from "./routes/authRoutes.js";
-import orderRoutes from "./routes/orderRoutes.js";
-import userRoutes from "./routes/userRoutes.js";
-import paymentRoutes from "./routes/paymentRoutes.js";
-import couponRoutes from "./routes/couponRoutes.js";
+// Import the Centralized Router
+import apiRoutes from "./routes/index.js"; 
 
 // Middlewares
 import { errorHandler } from "./middleware/errorHandler.js";
-import  logger  from "./middleware/logger.js";
+import logger from "./middleware/logger.js";
 
 // Swagger
 import { swaggerUi, swaggerSpec } from "./swagger/swagger.js";
@@ -28,15 +21,9 @@ app.use(express.json());
 app.use(morgan("dev"));
 app.use(logger);
 
-// API Routes
-app.use("/api/products", productRoutes);
-app.use("/api/cart", cartRoutes);
-app.use("/api/favorites", favoriteRoutes);
-app.use("/api/auth", authRoutes);
-app.use("/api/orders", orderRoutes);
-app.use("/api/users", userRoutes);
-app.use("/api/payment", paymentRoutes);
-app.use("/api/coupons", couponRoutes);
+// ✅ MOUNT ALL ROUTES HERE
+// This single line replaces all your manual app.use() calls
+app.use("/api", apiRoutes);
 
 // Swagger Documentation
 app.use("/api/docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));

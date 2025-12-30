@@ -1,160 +1,7 @@
-
-// import User from "../models/userModel.js";
-// import jwt from "jsonwebtoken";
-
-// // ========================================
-// // GET USER PROFILE
-// // ========================================
-// export const getUserProfile = async (req, res) => {
-//   const user = await User.findById(req.user._id).select("-password");
-
-//   if (!user) {
-//     return res.status(404).json({ message: "User not found" });
-//   }
-
-//   res.json({
-//     _id: user._id,
-//     name: user.name,
-//     email: user.email,
-//     isAdmin: user.isAdmin,
-//     addresses: user.addresses || [],
-//   });
-// };
-
-// // ========================================
-// // UPDATE USER PROFILE
-// // ========================================
-// export const updateUserProfile = async (req, res) => {
-//   const user = await User.findById(req.user._id);
-
-//   if (!user) {
-//     return res.status(404).json({ message: "User not found" });
-//   }
-
-//   user.name = req.body.name || user.name;
-//   user.email = req.body.email?.toLowerCase() || user.email;
-
-//   if (req.body.password) {
-//     user.password = req.body.password;
-//   }
-
-//   const updatedUser = await user.save();
-
-//   const token = jwt.sign(
-//     { id: updatedUser._id },
-//     process.env.JWT_SECRET || "secret",
-//     { expiresIn: "30d" }
-//   );
-
-//   res.json({
-//     _id: updatedUser._id,
-//     name: updatedUser.name,
-//     email: updatedUser.email,
-//     isAdmin: updatedUser.isAdmin,
-//     token,
-//   });
-// };
-
-// // ========================================
-// // ADD ADDRESS
-// // ========================================
-// export const saveAddress = async (req, res) => {
-//   try {
-//     const user = await User.findById(req.user._id);
-
-//     if (!user) {
-//       return res.status(404).json({ message: "User not found" });
-//     }
-
-//     const newAddress = {
-//       name: req.body.name,
-//       street: req.body.street,
-//       city: req.body.city,
-//       state: req.body.state,
-//       zip: req.body.zip,
-//       phone: req.body.phone,
-//       country: req.body.country || "India",
-//     };
-
-//     user.addresses.push(newAddress);
-//     await user.save();
-
-//     res.status(201).json({
-//       message: "Address saved successfully",
-//       addresses: user.addresses,
-//     });
-//   } catch (error) {
-//     console.error("Save address error:", error);
-//     res.status(500).json({ message: "Failed to save address" });
-//   }
-// };
-
-// // ========================================
-// // UPDATE ADDRESS  ✅ FIXED
-// // ========================================
-// export const updateAddress = async (req, res) => {
-//   try {
-//     const user = await User.findById(req.user._id);
-
-//     if (!user) {
-//       return res.status(404).json({ message: "User not found" });
-//     }
-
-//     const index = user.addresses.findIndex(
-//       (addr) => addr._id.toString() === req.params.addressId
-//     );
-
-//     if (index === -1) {
-//       return res.status(404).json({ message: "Address not found" });
-//     }
-
-//     user.addresses[index] = {
-//       ...user.addresses[index],
-//       ...req.body,
-//     };
-
-//     await user.save();
-
-//     res.json({
-//       message: "Address updated",
-//       addresses: user.addresses,
-//     });
-//   } catch (error) {
-//     console.error("Update address error:", error);
-//     res.status(500).json({ message: "Failed to update address" });
-//   }
-// };
-
-// // ========================================
-// // DELETE ADDRESS  ✅ FIXED
-// // ========================================
-// export const deleteAddress = async (req, res) => {
-//   try {
-//     const user = await User.findById(req.user._id);
-
-//     if (!user) {
-//       return res.status(404).json({ message: "User not found" });
-//     }
-
-//     user.addresses = user.addresses.filter(
-//       (addr) => addr._id.toString() !== req.params.addressId
-//     );
-
-//     await user.save();
-
-//     res.json({
-//       message: "Address deleted",
-//       addresses: user.addresses,
-//     });
-//   } catch (error) {
-//     console.error("Delete address error:", error);
-//     res.status(500).json({ message: "Failed to delete address" });
-//   }
-// };
-
-
 import User from "../models/userModel.js";
 import jwt from "jsonwebtoken";
+import CartItem from "../models/cartModel.js";
+import Favorite from "../models/favoriteModel.js";
 
 // @desc    Get user profile
 // @route   GET /api/users/profile
@@ -281,3 +128,24 @@ export const deleteAddress = async (req, res) => {
   await user.save();
   res.json({ message: "Address removed", addresses: user.addresses });
 };
+
+// @desc    Get user counts (Cart & Wishlist)
+// @route   GET /api/users/meta
+// @access  Private
+export const getUserMeta = async (req, res) => {
+  const userId = req.user._id;
+
+  // Run queries in parallel for speed
+  const [cartCount, wishlistCount] = await Promise.all([
+    CartItem.countDocuments({ user: userId }),
+    Favorite.countDocuments({ user: userId })
+  ]);
+
+  res.json({
+    cartCount,
+    wishlistCount
+  });
+};
+
+
+

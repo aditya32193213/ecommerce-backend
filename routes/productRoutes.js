@@ -51,7 +51,7 @@ import {
   getProductById,
   deleteProduct,
   createProduct,
-  updateProduct,
+  updateProduct
 } from "../controllers/productController.js";
 
 const router = express.Router();
@@ -90,5 +90,6 @@ router
   .get(getProductById) // Optional: Standard REST fetch
   .delete(protect, admin, deleteProduct) // Admin delete
   .put(protect, admin, updateProduct);   // Admin update
+
 
 export default router;

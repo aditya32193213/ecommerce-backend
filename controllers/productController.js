@@ -1,9 +1,37 @@
 import Product from "../models/productModel.js";
+import Favorite from "../models/favoriteModel.js";
 
 // @desc    Get all products
 export const getAllProducts = async (req, res) => {
-  const products = await Product.find().lean();
-  res.status(200).json(products);
+  const pageSize = Number(req.query.limit) || 12; // Default 12 per page
+  const page = Number(req.query.page) || 1;
+
+  // Search Logic
+  const keyword = req.query.keyword
+    ? {
+        title: {
+          $regex: req.query.keyword,
+          $options: "i", // Case insensitive
+        },
+      }
+    : {};
+
+  // Count total for pagination
+  const count = await Product.countDocuments({ ...keyword });
+  
+  // Fetch specific chunk of products
+  const products = await Product.find({ ...keyword })
+    .limit(pageSize)
+    .skip(pageSize * (page - 1))
+    .sort({ createdAt: -1 }) // Newest first
+    .lean(); // Faster
+
+  res.json({ 
+    products, 
+    page, 
+    pages: Math.ceil(count / pageSize),
+    total: count 
+  });
 };
 
 // @desc    Get unique categories
@@ -85,3 +113,4 @@ export const updateProduct = async (req, res) => {
   const updatedProduct = await product.save();
   res.json(updatedProduct);
 };
+

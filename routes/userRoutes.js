@@ -5,7 +5,8 @@ import {
   updateUserProfile,
   saveAddress,
   updateAddress,
-  deleteAddress
+  deleteAddress,
+  getUserMeta
 } from "../controllers/userController.js";
 
 const router = express.Router();
@@ -71,6 +72,7 @@ router.post("/address", protect, saveAddress);
 
 router.put("/address/:addressId", protect, updateAddress);
 router.delete("/address/:addressId", protect, deleteAddress);
+router.get("/meta", protect, getUserMeta);
 
 
 export default router;
