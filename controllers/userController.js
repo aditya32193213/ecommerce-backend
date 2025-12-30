@@ -134,23 +134,23 @@ export const deleteAddress = async (req, res) => {
 // @access  Private
 export const getUserMeta = async (req, res) => {
   try {
-    const userId = req.user._id;
+    const userId = req.user?.id;
 
-    let cart = await Cart.findOne({ user: userId }).lean();
-
-    // ✅ Ensure cart always exists
-    if (!cart) {
-      cart = { items: [] };
+    if (!userId) {
+      return res.status(401).json({ message: "Unauthorized" });
     }
 
-    const wishlistCount = await Favorite.countDocuments({ user: userId });
+    const cart = await Cart.findOne({ user: userId });
+    const wishlist = await Favorite.findOne({ user: userId });
 
-    const cartCount = cart.items.reduce(
-      (sum, item) => sum + Number(item.quantity || 0),
-      0
-    );
+    // ✅ FIXED LOGIC
+    const cartCount = cart
+      ? cart.items.reduce((sum, item) => sum + item.quantity, 0)
+      : 0;
 
-    res.status(200).json({
+    const wishlistCount = wishlist ? wishlist.products.length : 0;
+
+    res.json({
       cartCount,
       wishlistCount,
     });
@@ -159,6 +159,5 @@ export const getUserMeta = async (req, res) => {
     res.status(500).json({ message: "Failed to fetch user meta" });
   }
 };
-
 
 
