@@ -1,10 +1,9 @@
-import mongoose from "mongoose"; // Required for Transactions
+import mongoose from "mongoose";
+import PDFDocument from "pdfkit";
 import Order from "../models/orderModel.js";
 import Product from "../models/productModel.js";
 
-// @desc    Create new order
-// @route   POST /api/orders
-// @access  Private
+// ================= CREATE ORDER =================
 export const createOrder = async (req, res) => {
   const {
     orderItems,
@@ -24,32 +23,22 @@ export const createOrder = async (req, res) => {
     throw new Error("No order items");
   }
 
-  // 1. Start a Database Session (Transaction)
   const session = await mongoose.startSession();
   session.startTransaction();
 
   try {
-    // 2. Validate Stock & Deduct within the Session
+    // Deduct stock
     for (const item of orderItems) {
-      // Pass { session } to ensure we are reading the latest data locked in this transaction
       const product = await Product.findById(item.product).session(session);
 
-      if (!product) {
-        throw new Error("Product not found"); // Triggers catch block
+      if (!product || product.countInStock < item.qty) {
+        throw new Error(`Insufficient stock for ${item.name}`);
       }
 
-      if (product.countInStock < item.qty) {
-        throw new Error(
-          `Insufficient stock for ${product.title}. Only ${product.countInStock} left.`
-        );
-      }
-
-      // Deduct stock
       product.countInStock -= item.qty;
-      await product.save({ session }); // Save changes within session
+      await product.save({ session });
     }
 
-    // 3. Create the Order
     const order = new Order({
       orderItems,
       user: req.user._id,
@@ -62,93 +51,101 @@ export const createOrder = async (req, res) => {
       isPaid: isPaid || false,
       paidAt: paidAt || null,
       paymentResult: paymentResult || {},
+      statusHistory: [{ status: "Processing" }], // ✅ INIT TIMELINE
     });
 
-    // Save order within the session
     const createdOrder = await order.save({ session });
 
-    // 4. Commit Transaction (Make changes permanent)
     await session.commitTransaction();
     session.endSession();
 
     res.status(201).json(createdOrder);
-
   } catch (error) {
-    // 5. Abort Transaction (Undo EVERYTHING if any error occurs)
     await session.abortTransaction();
     session.endSession();
-    
-    // Pass the specific error message back to the client
     res.status(400);
     throw new Error(error.message);
   }
 };
 
-// @desc    Get logged in user orders
+// ================= GET MY ORDERS =================
 export const getMyOrders = async (req, res) => {
   const orders = await Order.find({ user: req.user._id }).sort({ createdAt: -1 });
   res.json(orders);
 };
 
-// @desc    Get all orders (Admin)
-export const getOrders = async (req, res) => {
-  const orders = await Order.find({})
-    .populate("user", "id name")
-    .sort({ createdAt: -1 });
-
-  res.json(orders);
+// ================= GET ORDER BY ID =================
+export const getOrderById = async (req, res) => {
+  const order = await Order.findById(req.params.id).populate("user", "name email");
+  if (!order) throw new Error("Order not found");
+  res.json(order);
 };
 
-// @desc    Update order to delivered
+// ================= MARK DELIVERED =================
 export const updateOrderToDelivered = async (req, res) => {
   const order = await Order.findById(req.params.id);
-
-  if (!order) {
-    res.status(404);
-    throw new Error("Order not found");
-  }
+  if (!order) throw new Error("Order not found");
 
   order.isDelivered = true;
   order.deliveredAt = Date.now();
   order.status = "Delivered";
+  order.statusHistory.push({ status: "Delivered" });
 
-  const updatedOrder = await order.save();
-  res.json(updatedOrder);
-};
-
-// @desc    Get order by ID
-export const getOrderById = async (req, res) => {
-  const order = await Order.findById(req.params.id).populate(
-    "user",
-    "name email"
-  );
-
-  if (!order) {
-    res.status(404);
-    throw new Error("Order not found");
-  }
-
+  await order.save();
   res.json(order);
 };
 
-// @desc    Cancel order
-// @route   PUT /api/orders/:id/cancel
-// @access  Private
+// ================= CANCEL ORDER + RESTORE STOCK =================
 export const cancelOrder = async (req, res) => {
   const order = await Order.findById(req.params.id);
+  if (!order) throw new Error("Order not found");
+  if (order.isDelivered) throw new Error("Delivered orders cannot be cancelled");
 
-  if (!order) {
-    res.status(404);
-    throw new Error("Order not found");
-  }
-
-  if (order.isDelivered) {
-    res.status(400);
-    throw new Error("Delivered orders cannot be cancelled");
+  // 🔥 RESTORE STOCK
+  for (const item of order.orderItems) {
+    const product = await Product.findById(item.product);
+    if (product) {
+      product.countInStock += item.qty;
+      await product.save();
+    }
   }
 
   order.status = "Cancelled";
-  await order.save();
+  order.statusHistory.push({ status: "Cancelled" });
 
+  await order.save();
   res.json(order);
+};
+
+// ================= INVOICE PDF =================
+export const generateInvoice = async (req, res) => {
+  const order = await Order.findById(req.params.id).populate("user");
+  if (!order) throw new Error("Order not found");
+
+  const doc = new PDFDocument();
+  res.setHeader("Content-Type", "application/pdf");
+  res.setHeader(
+    "Content-Disposition",
+    `attachment; filename=invoice-${order._id}.pdf`
+  );
+
+  doc.pipe(res);
+
+  doc.fontSize(18).text("INVOICE", { align: "center" });
+  doc.moveDown();
+
+  doc.text(`Order ID: ${order._id}`);
+  doc.text(`Customer: ${order.user.name}`);
+  doc.text(`Payment: ${order.paymentMethod}`);
+  doc.text(`Status: ${order.status}`);
+  doc.moveDown();
+
+  order.orderItems.forEach((item) => {
+    doc.text(`${item.name} x${item.qty} - $${item.price}`);
+  });
+
+  doc.moveDown();
+  doc.text(`Total: $${order.totalPrice}`, { bold: true });
+
+  doc.end();
 };

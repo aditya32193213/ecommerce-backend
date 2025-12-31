@@ -6,40 +6,42 @@ import Product from "../models/productModel.js";
 // =====================================================================
 // @desc    Get all products with pagination and search
 // @route   GET /api/products?keyword=abc&page=1&limit=12
-export const getAllProducts = async (req, res) => {
-  const pageSize = Number(req.query.limit) || 12; // Default 12 items
+  export const getAllProducts = async (req, res) => {
+  const pageSize = Number(req.query.limit) || 12;
   const page = Number(req.query.page) || 1;
 
-  // Search Logic
   const keyword = req.query.keyword
-    ? {
-        title: {
-          $regex: req.query.keyword,
-          $options: "i", // Case insensitive
-        },
-      }
+    ? { title: { $regex: req.query.keyword, $options: "i" } }
     : {};
 
-  // Count total for pagination logic
-  const count = await Product.countDocuments({ ...keyword });
-  
-  // Fetch specific chunk of products
-  const products = await Product.find({ ...keyword })
-    // 🔥 OPTIMIZATION: Only fetch fields needed for the Product Card.
-    // Excludes: 'description', 'user', 'createdAt', '__v' to save bandwidth.
-    .select("title price image category rating countInStock") 
+  const category = req.query.category ? { category: req.query.category } : {};
+
+  const minPrice = req.query.minPrice ? { price: { $gte: req.query.minPrice } } : {};
+  const maxPrice = req.query.maxPrice ? { price: { $lte: req.query.maxPrice } } : {};
+
+  let sortOption = { createdAt: -1 };
+  if (req.query.sort === "price") sortOption = { price: 1 };
+  if (req.query.sort === "rating") sortOption = { "rating.rate": -1 };
+
+  const filters = { ...keyword, ...category, ...minPrice, ...maxPrice };
+
+  const count = await Product.countDocuments(filters);
+
+  const products = await Product.find(filters)
+    .select("title price image category rating countInStock")
     .limit(pageSize)
     .skip(pageSize * (page - 1))
-    .sort({ createdAt: -1 }) // Newest first
-    .lean(); // Faster performance (Plain JS objects)
+    .sort(sortOption)
+    .lean();
 
-  res.json({ 
-    products, 
-    page, 
+  res.json({
+    products,
+    page,
     pages: Math.ceil(count / pageSize),
-    total: count 
+    total: count,
   });
 };
+
 
 // =====================================================================
 // 2. GET SINGLE PRODUCT (Public)

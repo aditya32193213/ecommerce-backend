@@ -5,8 +5,9 @@ const orderSchema = mongoose.Schema(
     user: {
       type: mongoose.Schema.Types.ObjectId,
       required: true,
-      ref: "User", // Links the order to the User who placed it
+      ref: "User",
     },
+
     orderItems: [
       {
         name: { type: String, required: true },
@@ -20,61 +21,47 @@ const orderSchema = mongoose.Schema(
         },
       },
     ],
+
     shippingAddress: {
       address: { type: String, required: true },
       city: { type: String, required: true },
       postalCode: { type: String, required: true },
       country: { type: String, required: true },
     },
-    paymentMethod: {
-      type: String,
-      required: true,
-    },
+
+    paymentMethod: { type: String, required: true },
+
     paymentResult: {
-      id: { type: String },
-      status: { type: String },
-      update_time: { type: String },
-      email_address: { type: String },
+      id: String,
+      status: String,
+      update_time: String,
+      email_address: String,
     },
-    taxPrice: {
-      type: Number,
-      required: true,
-      default: 0.0,
-    },
-    shippingPrice: {
-      type: Number,
-      required: true,
-      default: 0.0,
-    },
-    totalPrice: {
-      type: Number,
-      required: true,
-      default: 0.0,
-    },
-    isPaid: {
-      type: Boolean,
-      required: true,
-      default: false,
-    },
-    paidAt: {
-      type: Date,
-    },
-    isDelivered: {
-      type: Boolean,
-      required: true,
-      default: false,
-    },
-    deliveredAt: {
-      type: Date,
-    },
+
+    taxPrice: { type: Number, required: true, default: 0 },
+    shippingPrice: { type: Number, required: true, default: 0 },
+    totalPrice: { type: Number, required: true, default: 0 },
+
+    isPaid: { type: Boolean, default: false },
+    paidAt: Date,
+
+    isDelivered: { type: Boolean, default: false },
+    deliveredAt: Date,
+
     status: {
       type: String,
-      default: "Processing", // Default status
-    }
+      default: "Processing",
+    },
+
+    // ✅ ORDER STATUS TIMELINE
+    statusHistory: [
+      {
+        status: { type: String },
+        date: { type: Date, default: Date.now },
+      },
+    ],
   },
-  {
-    timestamps: true, // Automatically adds createdAt and updatedAt
-  }
+  { timestamps: true }
 );
 
 export default mongoose.model("Order", orderSchema);
