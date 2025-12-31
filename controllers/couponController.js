@@ -6,7 +6,7 @@ export const validateCoupon = async (req, res) => {
 
   // Simple hardcoded logic for demo
   if (couponCode === "FLAT50") {
-    res.json({ discount: 50, type: "flat" }); // $50 off
+     res.json({ discount: 50, type: "percent" });
   } else if (couponCode === "WELCOME10") {
     res.json({ discount: 10, type: "percent" }); // 10% off
   } else {
@@ -14,3 +14,7 @@ export const validateCoupon = async (req, res) => {
     throw new Error("Invalid Coupon Code");
   }
 };
+
+
+
+//res.json({ discount: 50, type: "flat" });
