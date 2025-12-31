@@ -151,7 +151,7 @@ export const generateInvoice = async (req, res) => {
 
   // ================= ORDER META =================
   doc.fontSize(12).text(`Order ID: ${order._id}`);
-  doc.text(`Invoice Date: ${new Date().toLocaleDateString()}`);
+  doc.text(`Invoice Date: ${new Date(order.createdAt).toLocaleDateString()}`);
   doc.text(`Payment Method: ${order.paymentMethod.toUpperCase()}`);
   doc.text(`Order Status: ${order.status}`);
   doc.moveDown();
@@ -160,7 +160,7 @@ export const generateInvoice = async (req, res) => {
   doc.fontSize(14).text("Customer Details", { underline: true });
   doc.moveDown(0.5);
 
-  doc.fontSize(12).text(`Name: ${order.user.username}`);
+  doc.fontSize(12).text(`Name: ${order.user.name} || "N/A"`);
   doc.text(`Email: ${order.user.email || "N/A"}`);
   doc.moveDown();
 
