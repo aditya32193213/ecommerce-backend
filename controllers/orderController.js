@@ -119,10 +119,24 @@ export const cancelOrder = async (req, res) => {
 
 // ================= INVOICE PDF =================
 export const generateInvoice = async (req, res) => {
-  const order = await Order.findById(req.params.id).populate("user");
-  if (!order) throw new Error("Order not found");
+  const order = await Order.findById(req.params.id).populate(
+    "user",
+    "username email"
+  );
 
-  const doc = new PDFDocument();
+  if (!order) {
+    res.status(404);
+    throw new Error("Order not found");
+  }
+
+  // 🔐 Only order owner can download
+  if (order.user._id.toString() !== req.user._id.toString()) {
+    res.status(403);
+    throw new Error("Not authorized");
+  }
+
+  const doc = new PDFDocument({ margin: 50 });
+
   res.setHeader("Content-Type", "application/pdf");
   res.setHeader(
     "Content-Disposition",
@@ -131,21 +145,59 @@ export const generateInvoice = async (req, res) => {
 
   doc.pipe(res);
 
-  doc.fontSize(18).text("INVOICE", { align: "center" });
+  // ================= HEADER =================
+  doc.fontSize(20).text("INVOICE", { align: "center" });
   doc.moveDown();
 
-  doc.text(`Order ID: ${order._id}`);
-  doc.text(`Customer: ${order.user.name}`);
-  doc.text(`Payment: ${order.paymentMethod}`);
-  doc.text(`Status: ${order.status}`);
+  // ================= ORDER META =================
+  doc.fontSize(12).text(`Order ID: ${order._id}`);
+  doc.text(`Invoice Date: ${new Date().toLocaleDateString()}`);
+  doc.text(`Payment Method: ${order.paymentMethod.toUpperCase()}`);
+  doc.text(`Order Status: ${order.status}`);
   doc.moveDown();
+
+  // ================= CUSTOMER =================
+  doc.fontSize(14).text("Customer Details", { underline: true });
+  doc.moveDown(0.5);
+
+  doc.fontSize(12).text(`Name: ${order.user.username}`);
+  doc.text(`Email: ${order.user.email || "N/A"}`);
+  doc.moveDown();
+
+  // ================= ADDRESS =================
+  doc.fontSize(14).text("Shipping Address", { underline: true });
+  doc.moveDown(0.5);
+
+  const addr = order.shippingAddress;
+  doc.fontSize(12).text(addr.address);
+  doc.text(`${addr.city}, ${addr.postalCode}`);
+  doc.text(addr.country || "India");
+  doc.moveDown();
+
+  // ================= ITEMS =================
+  doc.fontSize(14).text("Order Items", { underline: true });
+  doc.moveDown(0.5);
 
   order.orderItems.forEach((item) => {
-    doc.text(`${item.name} x${item.qty} - $${item.price}`);
+    doc
+      .fontSize(12)
+      .text(`${item.name}  x${item.qty}  -  $${item.price}`);
   });
 
   doc.moveDown();
-  doc.text(`Total: $${order.totalPrice}`, { bold: true });
+
+  // ================= TOTAL =================
+  doc.fontSize(14).text(`Total Amount: $${order.totalPrice}`, {
+    align: "right",
+  });
+
+  // ================= FOOTER =================
+  doc.moveDown(2);
+  doc.fontSize(10).text(
+    "Thank you for shopping with Shopnetic!",
+    { align: "center" }
+  );
 
   doc.end();
 };
+

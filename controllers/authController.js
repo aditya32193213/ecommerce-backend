@@ -3,11 +3,7 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 
 
-if (!process.env.JWT_SECRET) {
-  console.warn(
-    "⚠️ WARNING: JWT_SECRET is not set. Using fallback secret. This is NOT recommended for production."
-  );
-}
+
 
 export const register = async (req, res) => {
   const { name, email, password } = req.body;
