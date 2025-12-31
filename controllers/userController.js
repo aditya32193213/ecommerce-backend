@@ -1,4 +1,4 @@
-// import User from "../models/userModel.js";
+import User from "../models/userModel.js"; // ✅ FIXED (WAS MISSING)
 import jwt from "jsonwebtoken";
 import Favorite from "../models/favoriteModel.js";
 import Cart from "../models/cartModel.js";
@@ -23,10 +23,10 @@ const normalizeOutgoingAddress = (addr = {}) => ({
   _id: addr._id,
   name: addr.name || "",
   phone: addr.phone || "",
-  address: addr.street || addr.address || "",
+  address: addr.street || "",
   city: addr.city || "",
   state: addr.state || "",
-  postalCode: addr.zip || addr.postalCode || "",
+  postalCode: addr.zip || "",
   country: addr.country || "India",
 });
 
@@ -104,7 +104,8 @@ export const saveAddress = async (req, res) => {
 
     const address = normalizeIncomingAddress(req.body);
 
-    if (!address.street || !address.city || !address.state || !address.zip) {
+    // ✅ Relaxed but correct validation
+    if (!address.street || !address.city || !address.zip) {
       return res.status(400).json({
         message: "Incomplete address data",
       });
