@@ -1,6 +1,6 @@
 import Stripe from "stripe";
 import dotenv from "dotenv";
-import Product from "../models/productModel.js"; // Import Product model to fetch real prices
+import Product from "../models/productModel.js";
 
 dotenv.config();
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
@@ -10,61 +10,56 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 // @access  Private
 export const processPayment = async (req, res) => {
   try {
-    // 1. We expect a list of items, NOT the total amount
-    // structure: [{ product: "id123", qty: 2 }, ...]
-    const { items } = req.body; 
+    const { items, couponCode } = req.body;
 
     if (!items || items.length === 0) {
       return res.status(400).json({ message: "No items to process" });
     }
 
-    // 2. Calculate the Total Amount Securely
+    // 🔒 Calculate total from DB (authoritative)
     let totalAmount = 0;
 
     for (const item of items) {
       const product = await Product.findById(item.product);
-      
       if (product) {
-        // Use the Database price, not the frontend price
         totalAmount += product.price * item.qty;
-      } else {
-         // Optional: Handle case where product no longer exists
-         // console.warn(`Product ${item.product} not found`);
       }
     }
 
-    // 3. Convert to cents (Stripe requires integers, e.g., $10.00 -> 1000)
-    // Math.round handles potential floating point errors
-    const amountInCents = Math.round(totalAmount * 100);
-
-    if (amountInCents < 50) { // Stripe minimum is usually 50 cents
-         return res.status(400).json({ message: "Amount too low for transaction" });
+    // 🎟️ Apply coupon securely (backend only)
+    if (couponCode === "FLAT50") {
+      totalAmount -= 50;
+    } else if (couponCode === "WELCOME10") {
+      totalAmount -= totalAmount * 0.1;
     }
 
-    // 4. Create the Payment Intent
+    if (totalAmount < 0) totalAmount = 0;
+
+    const amountInCents = Math.round(totalAmount * 100);
+
+    if (amountInCents < 50) {
+      return res.status(400).json({ message: "Amount too low for transaction" });
+    }
+
     const paymentIntent = await stripe.paymentIntents.create({
       amount: amountInCents,
       currency: "usd",
-      metadata: { 
-        integration_check: "accept_a_payment",
-        userId: req.user._id.toString() // Good for tracking
+      metadata: {
+        userId: req.user._id.toString(),
+        coupon: couponCode || "NONE",
       },
     });
 
-    res.status(200).json({
+    res.json({
       client_secret: paymentIntent.client_secret,
-      calculatedAmount: totalAmount // Optional: send back verified total
+      calculatedAmount: totalAmount,
     });
-
   } catch (error) {
     console.error("Stripe Error:", error);
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ message: "Payment processing failed" });
   }
 };
 
-// @desc    Send Stripe API Key
-// @route   GET /api/payment/stripeapikey
-// @access  Private
 export const sendStripeApiKey = async (req, res) => {
-  res.status(200).json({ stripeApiKey: process.env.STRIPE_API_KEY });
+  res.json({ stripeApiKey: process.env.STRIPE_API_KEY });
 };
