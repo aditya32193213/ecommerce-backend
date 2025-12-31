@@ -19,15 +19,15 @@ const normalizeIncomingAddress = (body) => ({
 // ===================================
 // HELPER: Normalize DB → Frontend
 // ===================================
-const normalizeOutgoingAddress = (addr) => ({
+const normalizeOutgoingAddress = (addr = {}) => ({
   _id: addr._id,
-  name: addr.name,
-  phone: addr.phone,
-  address: addr.street,
-  city: addr.city,
-  state: addr.state,
-  postalCode: addr.zip,
-  country: addr.country,
+  name: addr.name || "",
+  phone: addr.phone || "",
+  address: addr.street || addr.address || "",
+  city: addr.city || "",
+  state: addr.state || "",
+  postalCode: addr.zip || addr.postalCode || "",
+  country: addr.country || "India",
 });
 
 // ===================================
