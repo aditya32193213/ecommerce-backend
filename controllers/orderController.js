@@ -121,7 +121,7 @@ export const cancelOrder = async (req, res) => {
 export const generateInvoice = async (req, res) => {
   const order = await Order.findById(req.params.id).populate(
     "user",
-    "username email"
+    "name email"
   );
 
   if (!order) {
@@ -160,7 +160,7 @@ export const generateInvoice = async (req, res) => {
   doc.fontSize(14).text("Customer Details", { underline: true });
   doc.moveDown(0.5);
 
-  doc.fontSize(12).text(`Name: ${order.user.name} || "N/A"`);
+  doc.fontSize(12).text(`Name: ${order.user.name || "N/A"}`);
   doc.text(`Email: ${order.user.email || "N/A"}`);
   doc.moveDown();
 
