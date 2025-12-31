@@ -9,13 +9,12 @@ export const createOrder = async (req, res) => {
     orderItems,
     shippingAddress,
     paymentMethod,
-    itemsPrice,
     taxPrice,
     shippingPrice,
-    totalPrice,
     isPaid,
     paidAt,
     paymentResult,
+    couponCode, // ✅ NEW (optional)
   } = req.body;
 
   if (!orderItems || orderItems.length === 0) {
@@ -27,7 +26,9 @@ export const createOrder = async (req, res) => {
   session.startTransaction();
 
   try {
-    // Deduct stock
+    // ================= RECALCULATE PRICES (AUTHORITATIVE) =================
+    let subtotal = 0;
+
     for (const item of orderItems) {
       const product = await Product.findById(item.product).session(session);
 
@@ -35,22 +36,44 @@ export const createOrder = async (req, res) => {
         throw new Error(`Insufficient stock for ${item.name}`);
       }
 
+      subtotal += product.price * item.qty;
+
+      // 🔥 Deduct stock (existing logic preserved)
       product.countInStock -= item.qty;
       await product.save({ session });
     }
 
+    // ================= APPLY COUPON (SAFE) =================
+    let discount = 0;
+
+    if (couponCode === "FLAT50") {
+      discount = 50;
+    } else if (couponCode === "WELCOME10") {
+      discount = subtotal * 0.1;
+    }
+
+    let totalPrice = subtotal - discount;
+    if (totalPrice < 0) totalPrice = 0;
+
+    // ================= CREATE ORDER =================
     const order = new Order({
       orderItems,
       user: req.user._id,
       shippingAddress,
       paymentMethod,
-      itemsPrice,
-      taxPrice,
-      shippingPrice,
+
+      // 🔐 Backend-trusted prices
+      itemsPrice: subtotal,
+      taxPrice: taxPrice || 0,
+      shippingPrice: shippingPrice || 0,
       totalPrice,
+
+      couponCode: couponCode || null,
+
       isPaid: isPaid || false,
       paidAt: paidAt || null,
       paymentResult: paymentResult || {},
+
       statusHistory: [{ status: "Processing" }], // ✅ INIT TIMELINE
     });
 
@@ -129,7 +152,6 @@ export const generateInvoice = async (req, res) => {
     throw new Error("Order not found");
   }
 
-  // 🔐 Only order owner can download
   if (order.user._id.toString() !== req.user._id.toString()) {
     res.status(403);
     throw new Error("Not authorized");
@@ -145,53 +167,40 @@ export const generateInvoice = async (req, res) => {
 
   doc.pipe(res);
 
-  // ================= HEADER =================
   doc.fontSize(20).text("INVOICE", { align: "center" });
   doc.moveDown();
 
-  // ================= ORDER META =================
   doc.fontSize(12).text(`Order ID: ${order._id}`);
   doc.text(`Invoice Date: ${new Date(order.createdAt).toLocaleDateString()}`);
   doc.text(`Payment Method: ${order.paymentMethod.toUpperCase()}`);
   doc.text(`Order Status: ${order.status}`);
   doc.moveDown();
 
-  // ================= CUSTOMER =================
   doc.fontSize(14).text("Customer Details", { underline: true });
   doc.moveDown(0.5);
-
   doc.fontSize(12).text(`Name: ${order.user.name || "N/A"}`);
   doc.text(`Email: ${order.user.email || "N/A"}`);
   doc.moveDown();
 
-  // ================= ADDRESS =================
   doc.fontSize(14).text("Shipping Address", { underline: true });
   doc.moveDown(0.5);
-
   const addr = order.shippingAddress;
   doc.fontSize(12).text(addr.address);
   doc.text(`${addr.city}, ${addr.postalCode}`);
   doc.text(addr.country || "India");
   doc.moveDown();
 
-  // ================= ITEMS =================
   doc.fontSize(14).text("Order Items", { underline: true });
   doc.moveDown(0.5);
-
   order.orderItems.forEach((item) => {
-    doc
-      .fontSize(12)
-      .text(`${item.name}  x${item.qty}  -  $${item.price}`);
+    doc.fontSize(12).text(`${item.name}  x${item.qty}  -  $${item.price}`);
   });
 
   doc.moveDown();
-
-  // ================= TOTAL =================
   doc.fontSize(14).text(`Total Amount: $${order.totalPrice}`, {
     align: "right",
   });
 
-  // ================= FOOTER =================
   doc.moveDown(2);
   doc.fontSize(10).text(
     "Thank you for shopping with Shopnetic!",
@@ -200,4 +209,3 @@ export const generateInvoice = async (req, res) => {
 
   doc.end();
 };
-
