@@ -43,7 +43,6 @@
  *         description: Product not found
  */
 
-// src/routes/favoriteroutes.js
 import express from "express";
 import { addToFavorite,getFavorites,removeFromFavorites } from "../controllers/favoriteController.js";
 import { validateFavorite } from "../middleware/validators/favoriteValidator.js";

@@ -86,7 +86,7 @@ router.get("/", getCartItems);
 // Update quantity (✅ productId)
 router.put("/:productId", updateCartItem);
 
-// Cleat the cart
+// Clear the cart
 router.delete("/", clearUserCart);
 
 // Remove item

@@ -40,7 +40,6 @@ const limiter = rateLimit({
   standardHeaders: true, 
   legacyHeaders: false, 
 });
-app.use("/api", limiter);
 
 // 4. Data Sanitization
 // Prevents MongoDB Operator Injection (e.g. {"$gt": ""})
@@ -57,9 +56,9 @@ app.use(logger);
 // Note: Place this before the API routes if you want docs to be publicly accessible without rate limits, 
 // or keep here if you want them limited.
 app.use("/api/docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+app.use("/api", limiter, apiRoutes);
 
-// Mount All Routes
-app.use("/api", apiRoutes);
+
 
 // Health Check
 app.get("/api/health", (req, res) => {

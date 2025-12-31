@@ -2,6 +2,13 @@ import User from "../models/userModel.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 
+
+if (!process.env.JWT_SECRET) {
+  console.warn(
+    "⚠️ WARNING: JWT_SECRET is not set. Using fallback secret. This is NOT recommended for production."
+  );
+}
+
 export const register = async (req, res) => {
   const { name, email, password } = req.body;
 
@@ -36,6 +43,10 @@ export const login = async (req, res) => {
   const isMatch = await bcrypt.compare(password, user.password);
   if (!isMatch) {
     return res.status(400).json({ message: "Invalid credentials" });
+  }
+
+  if (!process.env.JWT_SECRET) {
+  throw new Error("JWT_SECRET not configured");
   }
 
   const token = jwt.sign(
