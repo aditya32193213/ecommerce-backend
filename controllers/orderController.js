@@ -130,3 +130,25 @@ export const getOrderById = async (req, res) => {
 
   res.json(order);
 };
+
+// @desc    Cancel order
+// @route   PUT /api/orders/:id/cancel
+// @access  Private
+export const cancelOrder = async (req, res) => {
+  const order = await Order.findById(req.params.id);
+
+  if (!order) {
+    res.status(404);
+    throw new Error("Order not found");
+  }
+
+  if (order.isDelivered) {
+    res.status(400);
+    throw new Error("Delivered orders cannot be cancelled");
+  }
+
+  order.status = "Cancelled";
+  await order.save();
+
+  res.json(order);
+};

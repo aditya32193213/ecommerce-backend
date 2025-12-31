@@ -6,6 +6,7 @@ import {
   getOrders,
   updateOrderToDelivered,
   getOrderById,
+  cancelOrder
 } from "../controllers/orderController.js";
 
 const router = express.Router();
@@ -104,5 +105,7 @@ router.put("/:id/deliver", protect, admin, updateOrderToDelivered);
  *         description: Order details
  */
 router.get("/:id", protect, getOrderById);
+
+router.put("/:id/cancel", protect, cancelOrder);
 
 export default router;
