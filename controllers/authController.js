@@ -2,9 +2,6 @@ import User from "../models/userModel.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 
-
-
-
 export const register = async (req, res) => {
   const { name, email, password } = req.body;
 
@@ -87,21 +84,27 @@ export const forgotPassword = async (req, res) => {
 export const resetPassword = async (req, res) => {
   const { token, password } = req.body;
 
-  try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const user = await User.findById(decoded.id);
+  if (!token || !password) {
+    return res.status(400).json({ message: "Token and password are required" });
+  }
 
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || "secret");
+
+    const user = await User.findById(decoded.id);
     if (!user) {
-      res.status(404);
-      throw new Error("User not found");
+      return res.status(404).json({ message: "User not found" });
     }
 
-    user.password = password;
+    // ✅ HASH PASSWORD (CRITICAL FIX)
+    const salt = await bcrypt.genSalt(10);
+    user.password = await bcrypt.hash(password, salt);
+
     await user.save();
 
     res.json({ message: "Password updated successfully" });
-  } catch {
-    res.status(400);
-    throw new Error("Invalid or expired token");
+  } catch (error) {
+    return res.status(400).json({ message: "Invalid or expired token" });
   }
 };
+
