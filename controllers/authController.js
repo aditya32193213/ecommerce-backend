@@ -44,7 +44,7 @@ export const login = async (req, res) => {
 
   const token = jwt.sign(
     { id: user._id },
-    process.env.JWT_SECRET || "secret",
+    process.env.JWT_SECRET,
     { expiresIn: "30d" }
   );
 
@@ -83,20 +83,14 @@ export const forgotPassword = async (req, res) => {
 
 export const resetPassword = async (req, res) => {
   try {
-    let { token } = req.params;
+    const { token } = req.params;
     const { password } = req.body;
 
-    if (!token) {
-      return res.status(400).json({ message: "Token missing" });
+    if (!password) {
+      return res.status(400).json({ message: "Password is required" });
     }
 
-    if (!password || password.length < 6) {
-      return res.status(400).json({ message: "Password too short" });
-    }
-
-    // ✅ IMPORTANT: decode token (fixes %3D issue)
-    token = decodeURIComponent(token);
-
+    // ✅ VERIFY token using SAME JWT_SECRET
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
     const user = await User.findById(decoded.id);
@@ -104,16 +98,18 @@ export const resetPassword = async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    // ✅ hash password
+    // ✅ HASH NEW PASSWORD (DO NOT STORE PLAIN TEXT)
     const salt = await bcrypt.genSalt(10);
     user.password = await bcrypt.hash(password, salt);
+
+    // Optional but recommended: invalidate old reset links
+    user.passwordChangedAt = Date.now();
 
     await user.save();
 
     res.json({ message: "Password reset successful" });
-  } catch (error) {
-    console.error("RESET PASSWORD ERROR:", error.message);
-    res.status(400).json({ message: "Invalid or expired token" });
+  } catch (err) {
+    console.error("Reset password error:", err.message);
+    return res.status(400).json({ message: "Invalid or expired token" });
   }
 };
-
