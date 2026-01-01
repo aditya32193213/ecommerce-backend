@@ -96,6 +96,6 @@ router.post("/forgot-password", forgotPassword);
  *       200:
  *         description: Password updated
  */
-router.post("/reset-password", resetPassword);
+router.put("/reset-password", resetPassword);
 
 export default router;
