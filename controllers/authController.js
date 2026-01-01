@@ -81,43 +81,6 @@ export const forgotPassword = async (req, res) => {
   res.json({ message: "Password reset link sent" });
 };
 
-// export const resetPassword = async (req, res) => {
-//   try {
-//     const { token } = req.params;
-//     const { password } = req.body;
-
-//     if (!password) {
-//       return res.status(400).json({ message: "Password is required" });
-//     }
-
-//     // ✅ VERIFY token using SAME JWT_SECRET
-//     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-
-//     const user = await User.findById(decoded.id);
-//     if (!user) {
-//       return res.status(404).json({ message: "User not found" });
-//     }
-
-//     // ✅ HASH NEW PASSWORD (DO NOT STORE PLAIN TEXT)
-//     const salt = await bcrypt.genSalt(10);
-//     user.password = await bcrypt.hash(password, salt);
-
-//     // Optional but recommended: invalidate old reset links
-//     user.passwordChangedAt = Date.now();
-
-//     await user.save();
-
-//     res.json({ message: "Password reset successful" });
-//   } catch (err) {
-//     console.error("Reset password error:", err.message);
-//     return res.status(400).json({ message: "Invalid or expired token" });
-//   }
-// };
-
-
-
-
-
 export const resetPassword = async (req, res) => {
   try {
     const { token } = req.params;
