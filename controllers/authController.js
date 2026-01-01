@@ -82,32 +82,38 @@ export const forgotPassword = async (req, res) => {
 };
 
 export const resetPassword = async (req, res) => {
-  const { token } = req.params;
-  const { password } = req.body;
-
-  if (!password) {
-    return res.status(400).json({ message: "Password is required" });
-  }
-
   try {
-    // Verify reset token
+    let { token } = req.params;
+    const { password } = req.body;
+
+    if (!token) {
+      return res.status(400).json({ message: "Token missing" });
+    }
+
+    if (!password || password.length < 6) {
+      return res.status(400).json({ message: "Password too short" });
+    }
+
+    // ✅ IMPORTANT: decode token (fixes %3D issue)
+    token = decodeURIComponent(token);
+
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
     const user = await User.findById(decoded.id);
     if (!user) {
-      return res.status(400).json({ message: "Invalid token or user not found" });
+      return res.status(404).json({ message: "User not found" });
     }
 
-    // 🔐 HASH PASSWORD (THIS WAS MISSING)
+    // ✅ hash password
     const salt = await bcrypt.genSalt(10);
     user.password = await bcrypt.hash(password, salt);
 
     await user.save();
 
-    res.status(200).json({ message: "Password reset successful" });
+    res.json({ message: "Password reset successful" });
   } catch (error) {
-    console.error("Reset password error:", error);
-    return res.status(400).json({ message: "Invalid or expired token" });
+    console.error("RESET PASSWORD ERROR:", error.message);
+    res.status(400).json({ message: "Invalid or expired token" });
   }
 };
 
