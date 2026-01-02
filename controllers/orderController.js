@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 import PDFDocument from "pdfkit";
 import Order from "../models/orderModel.js";
 import Product from "../models/productModel.js";
+import User from "../models/userModel.js"
 
 // ================= CREATE ORDER =================
 export const createOrder = async (req, res) => {
@@ -188,18 +189,20 @@ export const getAdminOrders = async (req, res) => {
     const page = Number(req.query.page) || 1;
     const limit = Number(req.query.limit) || 10;
 
-    const keyword = req.query.keyword
-      ? {
-          "user.name": {
-            $regex: req.query.keyword,
-            $options: "i",
-          },
-        }
-      : {};
+    let userFilter = {};
+
+    // 🔍 FIX: Search users first
+    if (req.query.keyword) {
+      const users = await User.find({
+        name: { $regex: req.query.keyword, $options: "i" },
+      }).select("_id");
+
+      userFilter = { user: { $in: users.map((u) => u._id) } };
+    }
 
     const [count, orders] = await Promise.all([
-      Order.countDocuments(keyword),
-      Order.find(keyword)
+      Order.countDocuments(userFilter),
+      Order.find(userFilter)
         .populate("user", "name email")
         .sort({ createdAt: -1 })
         .limit(limit)
