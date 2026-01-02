@@ -68,7 +68,7 @@ export const createOrder = async (req, res) => {
       paymentResult: paymentResult || {},
 
       status: "Placed",
-      statusHistory: [{ status: "Placed" }],
+      statusHistory: [{ status: "Placed" , date: new Date() }],
     });
 
     const createdOrder = await order.save({ session });
@@ -139,7 +139,7 @@ export const updateOrderStatus = async (req, res) => {
     }
 
     order.status = nextStatus;
-    order.statusHistory.push({ status: nextStatus });
+    order.statusHistory.push({ status: nextStatus ,date:new Date() });
 
     if (nextStatus === "Delivered") {
       order.isDelivered = true;
@@ -177,7 +177,7 @@ export const cancelOrder = async (req, res) => {
   }
 
   order.status = "Cancelled";
-  order.statusHistory.push({ status: "Cancelled" });
+  order.statusHistory.push({ status: "Cancelled", date: new Date()});
 
   await order.save();
   res.json(order);

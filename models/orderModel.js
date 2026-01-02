@@ -80,7 +80,7 @@ const orderSchema = new mongoose.Schema(
           type: String,
           enum: ["Placed", "Processing", "Shipped", "Delivered", "Cancelled"],
         },
-        timestamp: {
+        date: {
           type: Date,
           default: Date.now,
         },
