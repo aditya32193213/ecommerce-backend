@@ -1,4 +1,4 @@
-import User from "../models/userModel.js"; // ✅ FIXED (WAS MISSING)
+import User from "../models/userModel.js";
 import jwt from "jsonwebtoken";
 import Favorite from "../models/favoriteModel.js";
 import Cart from "../models/cartModel.js";
@@ -238,5 +238,63 @@ export const getAdminUsers = async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Failed to fetch users" });
+  }
+};
+
+// ===================================
+// TOGGLE ADMIN ROLE (ADMIN ONLY)
+// ===================================
+export const toggleAdminRole = async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // ❗ Prevent self-demotion
+    if (user._id.toString() === req.user._id.toString()) {
+      return res
+        .status(400)
+        .json({ message: "You cannot change your own role" });
+    }
+
+    user.isAdmin = !user.isAdmin;
+    await user.save();
+
+    res.json({
+      message: "User role updated successfully",
+      isAdmin: user.isAdmin,
+    });
+  } catch (error) {
+    console.error("Toggle admin error:", error);
+    res.status(500).json({ message: "Failed to update role" });
+  }
+};
+
+// ===================================
+// DELETE USER (ADMIN ONLY)
+// ===================================
+export const deleteUser = async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // ❗ Prevent self-delete
+    if (user._id.toString() === req.user._id.toString()) {
+      return res
+        .status(400)
+        .json({ message: "You cannot delete your own account" });
+    }
+
+    await user.deleteOne();
+
+    res.json({ message: "User deleted successfully" });
+  } catch (error) {
+    console.error("Delete user error:", error);
+    res.status(500).json({ message: "Failed to delete user" });
   }
 };
