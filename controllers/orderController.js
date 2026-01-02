@@ -279,11 +279,11 @@ export const generateInvoice = async (req, res) => {
   doc.fontSize(14).text("Order Items", { underline: true });
   doc.moveDown(0.5);
   order.orderItems.forEach((item) => {
-    doc.fontSize(12).text(`${item.name}  x${item.qty}  -  ₹${item.price}`);
+    doc.fontSize(12).text(`${item.name}  x${item.qty}  -  $${item.price}`);
   });
 
   doc.moveDown();
-  doc.fontSize(14).text(`Total Amount: ₹${order.totalPrice}`, {
+  doc.fontSize(14).text(`Total Amount: $${order.totalPrice}`, {
     align: "right",
   });
 
