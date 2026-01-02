@@ -101,13 +101,14 @@ export const deleteProduct = async (req, res) => {
 // @route   POST /api/products
 export const createProduct = async (req, res) => {
   const product = new Product({
-    title: "Sample Product",
+    title: "",
     price: 0,
     user: req.user._id,
-    image: "/images/sample.jpg",
-    category: "Sample Category",
+    image: "",
+    category: "",
     countInStock: 0,
-    description: "Sample description",
+    description: "",
+    isDraft :true,
   });
 
   const createdProduct = await product.save();
@@ -117,22 +118,24 @@ export const createProduct = async (req, res) => {
 // @desc    Update product (Admin)
 // @route   PUT /api/products/:id
 export const updateProduct = async (req, res) => {
-  const { title, price, description, image, category, countInStock } = req.body;
-
   const product = await Product.findById(req.params.id);
 
-  if (product) {
-    product.title = title;
-    product.price = price;
-    product.description = description;
-    product.image = image;
-    product.category = category;
-    product.countInStock = countInStock;
-
-    const updatedProduct = await product.save();
-    res.json(updatedProduct);
-  } else {
+  if (!product) {
     res.status(404);
     throw new Error("Product not found");
   }
+
+  // ✅ SAFE updates (no undefined overwrite)
+  product.title = req.body.title ?? product.title;
+  product.price = req.body.price ?? product.price;
+  product.description = req.body.description ?? product.description;
+  product.image = req.body.image ?? product.image;
+  product.category = req.body.category ?? product.category;
+  product.countInStock =req.body.countInStock !== undefined ? req.body.countInStock : product.countInStock;
+
+  // ✅ Auto-publish when admin edits
+  product.isDraft = false;
+
+  const updatedProduct = await product.save();
+  res.json(updatedProduct);
 };

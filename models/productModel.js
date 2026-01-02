@@ -1,3 +1,4 @@
+import { boolean } from "joi";
 import mongoose from "mongoose";
 
 const productSchema = new mongoose.Schema(
@@ -56,6 +57,11 @@ const productSchema = new mongoose.Schema(
     message: "Stock must be an integer",
      },
     },
+
+    isDraft:{
+      type: Boolean,
+      default: false,
+    }
   },
 
   { timestamps: true }
