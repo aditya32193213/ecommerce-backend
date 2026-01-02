@@ -4,9 +4,10 @@ import {
   createOrder,
   getMyOrders,
   getOrderById,
-  updateOrderToDelivered,
   cancelOrder,
   generateInvoice,
+  getAdminOrders,
+  updateOrderStatus
 } from "../controllers/orderController.js";
 
 const router = express.Router();
@@ -14,8 +15,8 @@ const router = express.Router();
 router.get("/myorders", protect, getMyOrders);
 router.post("/", protect, createOrder);
 router.get("/:id", protect, getOrderById);
-router.put("/:id/deliver", protect, admin, updateOrderToDelivered);
 router.put("/:id/cancel", protect, cancelOrder);
 router.get("/:id/invoice", protect, generateInvoice); // ✅ INVOICE
-
+router.get("/admin", protect, admin, getAdminOrders);
+router.put("/:id/status",protect,admin,updateOrderStatus);
 export default router;

@@ -14,7 +14,7 @@ export const createOrder = async (req, res) => {
     isPaid,
     paidAt,
     paymentResult,
-    couponCode, // ✅ NEW (optional)
+    couponCode,
   } = req.body;
 
   if (!orderItems || orderItems.length === 0) {
@@ -26,7 +26,6 @@ export const createOrder = async (req, res) => {
   session.startTransaction();
 
   try {
-    // ================= RECALCULATE PRICES (AUTHORITATIVE) =================
     let subtotal = 0;
 
     for (const item of orderItems) {
@@ -38,31 +37,24 @@ export const createOrder = async (req, res) => {
 
       subtotal += product.price * item.qty;
 
-      // 🔥 Deduct stock (existing logic preserved)
       product.countInStock -= item.qty;
       await product.save({ session });
     }
 
-    // ================= APPLY COUPON (SAFE) =================
+    // ================= APPLY COUPON =================
     let discount = 0;
-
-    if (couponCode === "FLAT50") {
-      discount = 50;
-    } else if (couponCode === "WELCOME10") {
-      discount = subtotal * 0.1;
-    }
+    if (couponCode === "FLAT50") discount = 50;
+    else if (couponCode === "WELCOME10") discount = subtotal * 0.1;
 
     let totalPrice = subtotal - discount;
     if (totalPrice < 0) totalPrice = 0;
 
-    // ================= CREATE ORDER =================
     const order = new Order({
       orderItems,
       user: req.user._id,
       shippingAddress,
       paymentMethod,
 
-      // 🔐 Backend-trusted prices
       itemsPrice: subtotal,
       taxPrice: taxPrice || 0,
       shippingPrice: shippingPrice || 0,
@@ -74,7 +66,8 @@ export const createOrder = async (req, res) => {
       paidAt: paidAt || null,
       paymentResult: paymentResult || {},
 
-      statusHistory: [{ status: "Processing" }], // ✅ INIT TIMELINE
+      status: "Placed",
+      statusHistory: [{ status: "Placed" }],
     });
 
     const createdOrder = await order.save({ session });
@@ -99,23 +92,50 @@ export const getMyOrders = async (req, res) => {
 
 // ================= GET ORDER BY ID =================
 export const getOrderById = async (req, res) => {
-  const order = await Order.findById(req.params.id).populate("user", "name email");
+  const order = await Order.findById(req.params.id).populate(
+    "user",
+    "name email"
+  );
+
   if (!order) throw new Error("Order not found");
   res.json(order);
 };
 
-// ================= MARK DELIVERED =================
-export const updateOrderToDelivered = async (req, res) => {
-  const order = await Order.findById(req.params.id);
-  if (!order) throw new Error("Order not found");
+// ================= UPDATE ORDER STATUS (ADMIN) =================
+export const updateOrderStatus = async (req, res) => {
+  try {
+    const order = await Order.findById(req.params.id);
 
-  order.isDelivered = true;
-  order.deliveredAt = Date.now();
-  order.status = "Delivered";
-  order.statusHistory.push({ status: "Delivered" });
+    if (!order) {
+      return res.status(404).json({ message: "Order not found" });
+    }
 
-  await order.save();
-  res.json(order);
+    const nextStatusMap = {
+      Placed: "Processing",
+      Processing: "Shipped",
+      Shipped: "Delivered",
+    };
+
+    const nextStatus = nextStatusMap[order.status];
+
+    if (!nextStatus) {
+      return res.status(400).json({ message: "Order already completed" });
+    }
+
+    order.status = nextStatus;
+    order.statusHistory.push({ status: nextStatus });
+
+    if (nextStatus === "Delivered") {
+      order.isDelivered = true;
+      order.deliveredAt = Date.now();
+    }
+
+    await order.save();
+    res.json(order);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Failed to update order status" });
+  }
 };
 
 // ================= CANCEL ORDER + RESTORE STOCK =================
@@ -124,7 +144,6 @@ export const cancelOrder = async (req, res) => {
   if (!order) throw new Error("Order not found");
   if (order.isDelivered) throw new Error("Delivered orders cannot be cancelled");
 
-  // 🔥 RESTORE STOCK
   for (const item of order.orderItems) {
     const product = await Product.findById(item.product);
     if (product) {
@@ -140,6 +159,43 @@ export const cancelOrder = async (req, res) => {
   res.json(order);
 };
 
+// ================= ADMIN PAGINATED ORDERS =================
+export const getAdminOrders = async (req, res) => {
+  try {
+    const page = Number(req.query.page) || 1;
+    const limit = Number(req.query.limit) || 10;
+
+    const keyword = req.query.keyword
+      ? {
+          "user.name": {
+            $regex: req.query.keyword,
+            $options: "i",
+          },
+        }
+      : {};
+
+    const [count, orders] = await Promise.all([
+      Order.countDocuments(keyword),
+      Order.find(keyword)
+        .populate("user", "name email")
+        .sort({ createdAt: -1 })
+        .limit(limit)
+        .skip(limit * (page - 1))
+        .lean(),
+    ]);
+
+    res.json({
+      orders,
+      page,
+      pages: Math.ceil(count / limit),
+      total: count,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Failed to fetch admin orders" });
+  }
+};
+
 // ================= INVOICE PDF =================
 export const generateInvoice = async (req, res) => {
   const order = await Order.findById(req.params.id).populate(
@@ -152,7 +208,11 @@ export const generateInvoice = async (req, res) => {
     throw new Error("Order not found");
   }
 
-  if (order.user._id.toString() !== req.user._id.toString()) {
+  // ✅ allow owner OR admin
+  if (
+    order.user._id.toString() !== req.user._id.toString() &&
+    !req.user.isAdmin
+  ) {
     res.status(403);
     throw new Error("Not authorized");
   }
@@ -178,8 +238,8 @@ export const generateInvoice = async (req, res) => {
 
   doc.fontSize(14).text("Customer Details", { underline: true });
   doc.moveDown(0.5);
-  doc.fontSize(12).text(`Name: ${order.user.name || "N/A"}`);
-  doc.text(`Email: ${order.user.email || "N/A"}`);
+  doc.fontSize(12).text(`Name: ${order.user.name}`);
+  doc.text(`Email: ${order.user.email}`);
   doc.moveDown();
 
   doc.fontSize(14).text("Shipping Address", { underline: true });
@@ -193,19 +253,18 @@ export const generateInvoice = async (req, res) => {
   doc.fontSize(14).text("Order Items", { underline: true });
   doc.moveDown(0.5);
   order.orderItems.forEach((item) => {
-    doc.fontSize(12).text(`${item.name}  x${item.qty}  -  $${item.price}`);
+    doc.fontSize(12).text(`${item.name}  x${item.qty}  -  ₹${item.price}`);
   });
 
   doc.moveDown();
-  doc.fontSize(14).text(`Total Amount: $${order.totalPrice}`, {
+  doc.fontSize(14).text(`Total Amount: ₹${order.totalPrice}`, {
     align: "right",
   });
 
   doc.moveDown(2);
-  doc.fontSize(10).text(
-    "Thank you for shopping with Shopnetic!",
-    { align: "center" }
-  );
+  doc.fontSize(10).text("Thank you for shopping with Shopnetic!", {
+    align: "center",
+  });
 
   doc.end();
 };

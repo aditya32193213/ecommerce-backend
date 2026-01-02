@@ -1,23 +1,23 @@
 import mongoose from "mongoose";
 
-const orderSchema = mongoose.Schema(
+const orderSchema = new mongoose.Schema(
   {
     user: {
       type: mongoose.Schema.Types.ObjectId,
-      required: true,
       ref: "User",
+      required: true,
     },
 
     orderItems: [
       {
         name: { type: String, required: true },
         qty: { type: Number, required: true },
-        image: { type: String, required: true },
+        image: { type: String },
         price: { type: Number, required: true },
         product: {
           type: mongoose.Schema.Types.ObjectId,
-          required: true,
           ref: "Product",
+          required: true,
         },
       },
     ],
@@ -29,7 +29,10 @@ const orderSchema = mongoose.Schema(
       country: { type: String, required: true },
     },
 
-    paymentMethod: { type: String, required: true },
+    paymentMethod: {
+      type: String,
+      required: true,
+    },
 
     paymentResult: {
       id: String,
@@ -38,28 +41,68 @@ const orderSchema = mongoose.Schema(
       email_address: String,
     },
 
-    taxPrice: { type: Number, required: true, default: 0 },
-    shippingPrice: { type: Number, required: true, default: 0 },
-    totalPrice: { type: Number, required: true, default: 0 },
-
-    isPaid: { type: Boolean, default: false },
-    paidAt: Date,
-
-    isDelivered: { type: Boolean, default: false },
-    deliveredAt: Date,
-
-    status: {
-      type: String,
-      default: "Processing",
+    // ✅ REQUIRED (was missing)
+    itemsPrice: {
+      type: Number,
+      required: true,
+      default: 0,
     },
 
-    // ✅ ORDER STATUS TIMELINE
+    taxPrice: {
+      type: Number,
+      required: true,
+      default: 0,
+    },
+
+    shippingPrice: {
+      type: Number,
+      required: true,
+      default: 0,
+    },
+
+    totalPrice: {
+      type: Number,
+      required: true,
+      default: 0,
+    },
+
+    // ✅ EXPANDED STATUS
+    status: {
+      type: String,
+      enum: ["Placed", "Processing", "Shipped", "Delivered", "Cancelled"],
+      default: "Placed",
+    },
+
+    // ✅ STATUS HISTORY (AUDIT TRAIL)
     statusHistory: [
       {
-        status: { type: String },
-        date: { type: Date, default: Date.now },
+        status: {
+          type: String,
+          enum: ["Placed", "Processing", "Shipped", "Delivered", "Cancelled"],
+        },
+        timestamp: {
+          type: Date,
+          default: Date.now,
+        },
       },
     ],
+
+    isPaid: {
+      type: Boolean,
+      default: false,
+    },
+    paidAt: {
+      type: Date,
+    },
+
+    // ✅ BACKWARD COMPATIBILITY
+    isDelivered: {
+      type: Boolean,
+      default: false,
+    },
+    deliveredAt: {
+      type: Date,
+    },
   },
   { timestamps: true }
 );

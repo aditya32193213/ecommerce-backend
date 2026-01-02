@@ -1,12 +1,13 @@
 import express from "express";
-import { protect } from "../middleware/authMiddleware.js";
+import { protect, admin } from "../middleware/authMiddleware.js";
 import {
   getUserProfile,
   updateUserProfile,
   saveAddress,
   updateAddress,
   deleteAddress,
-  getUserMeta
+  getUserMeta,
+  getAdminUsers
 } from "../controllers/userController.js";
 
 const router = express.Router();
@@ -73,6 +74,6 @@ router.post("/address", protect, saveAddress);
 router.put("/address/:addressId", protect, updateAddress);
 router.delete("/address/:addressId", protect, deleteAddress);
 router.get("/meta", protect, getUserMeta);
-
+router.get("/admin", protect, admin, getAdminUsers);
 
 export default router;
