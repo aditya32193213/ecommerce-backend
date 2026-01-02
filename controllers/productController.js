@@ -100,19 +100,35 @@ export const deleteProduct = async (req, res) => {
 // @desc    Create product (Admin)
 // @route   POST /api/products
 export const createProduct = async (req, res) => {
-  const product = new Product({
-    title: "",
-    price: 0,
-    user: req.user._id,
-    image: "",
-    category: "",
-    countInStock: 0,
-    description: "",
-    isDraft :true,
-  });
+  try {
+    const {
+      title = "DRAFT",
+      category = "draft",
+      price = 0,
+      image = "",
+      description = "",
+      countInStock = 0,
+      isDraft = true,
+    } = req.body;
 
-  const createdProduct = await product.save();
-  res.status(201).json(createdProduct);
+    const product = new Product({
+      title,
+      category,
+      price,
+      image,
+      description,
+      countInStock,
+      isDraft,
+      user: req.user._id,
+    });
+
+    const createdProduct = await product.save();
+    res.status(201).json(createdProduct);
+  } catch (error) {
+    res.status(400).json({
+      message: error.message,
+    });
+  }
 };
 
 // @desc    Update product (Admin)
