@@ -61,11 +61,12 @@ export const getAdminDashboard = async (req, res) => {
       User.countDocuments(),
       Product.countDocuments(),
 
+      // ✅ TOTAL REVENUE (paid + not cancelled)
       Order.aggregate([
         {
-          $match: { 
+          $match: {
             isPaid: true,
-            status: { $ne: "Cancelled" } 
+            status: { $ne: "Cancelled" },
           },
         },
         {
@@ -76,7 +77,14 @@ export const getAdminDashboard = async (req, res) => {
         },
       ]),
 
+      // ✅ ORDERS BY DATE (MATCHES REVENUE LOGIC)
       Order.aggregate([
+        {
+          $match: {
+            isPaid: true,
+            status: { $ne: "Cancelled" },
+          },
+        },
         {
           $group: {
             _id: {
@@ -92,7 +100,7 @@ export const getAdminDashboard = async (req, res) => {
         { $sort: { _id: 1 } },
       ]),
 
-      // ✅ NEW: Orders by Status (for analytics)
+      // ✅ ORDERS BY STATUS (includes Cancelled for analytics)
       Order.aggregate([
         {
           $group: {
