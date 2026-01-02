@@ -102,8 +102,8 @@ export const deleteProduct = async (req, res) => {
 export const createProduct = async (req, res) => {
   try {
     const {
-      title = "DRAFT",
-      category = "draft",
+      title = "title",
+      category = "category",
       price = 0,
       image = "",
       description = "",

@@ -92,12 +92,20 @@ export const getMyOrders = async (req, res) => {
 
 // ================= GET ORDER BY ID =================
 export const getOrderById = async (req, res) => {
+  // ✅ Prevent invalid ObjectId crashes
+  if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+    return res.status(400).json({ message: "Invalid order ID" });
+  }
+
   const order = await Order.findById(req.params.id).populate(
     "user",
     "name email"
   );
 
-  if (!order) throw new Error("Order not found");
+  if (!order) {
+    return res.status(404).json({ message: "Order not found" });
+  }
+
   res.json(order);
 };
 
