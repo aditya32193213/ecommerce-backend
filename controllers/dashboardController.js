@@ -63,7 +63,10 @@ export const getAdminDashboard = async (req, res) => {
 
       Order.aggregate([
         {
-          $match: { isPaid: true },
+          $match: { 
+            isPaid: true,
+            status: { $ne: "Cancelled" } 
+          },
         },
         {
           $group: {
