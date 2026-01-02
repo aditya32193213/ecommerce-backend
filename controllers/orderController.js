@@ -110,6 +110,13 @@ export const updateOrderStatus = async (req, res) => {
       return res.status(404).json({ message: "Order not found" });
     }
 
+    // ✅ CRITICAL GUARD
+    if (order.status === "Cancelled") {
+      return res.status(400).json({
+        message: "Cancelled orders cannot be updated",
+      });
+    }
+
     const nextStatusMap = {
       Placed: "Processing",
       Processing: "Shipped",
@@ -119,7 +126,7 @@ export const updateOrderStatus = async (req, res) => {
     const nextStatus = nextStatusMap[order.status];
 
     if (!nextStatus) {
-      return res.status(400).json({ message: "Order already completed" });
+      return res.status(400).json({ message: "Order cannot be updated further" });
     }
 
     order.status = nextStatus;
@@ -142,7 +149,15 @@ export const updateOrderStatus = async (req, res) => {
 export const cancelOrder = async (req, res) => {
   const order = await Order.findById(req.params.id);
   if (!order) throw new Error("Order not found");
-  if (order.isDelivered) throw new Error("Delivered orders cannot be cancelled");
+
+  // ✅ IDEMPOTENCY GUARD
+  if (order.status === "Cancelled") {
+    return res.json(order);
+  }
+
+  if (order.isDelivered) {
+    throw new Error("Delivered orders cannot be cancelled");
+  }
 
   for (const item of order.orderItems) {
     const product = await Product.findById(item.product);

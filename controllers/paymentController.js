@@ -1,6 +1,7 @@
 import Stripe from "stripe";
 import dotenv from "dotenv";
 import Product from "../models/productModel.js";
+import Order from "../models/orderModel.js"
 
 dotenv.config();
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
@@ -15,6 +16,16 @@ export const processPayment = async (req, res) => {
     if (!items || items.length === 0) {
       return res.status(400).json({ message: "No items to process" });
     }
+
+    if (req.body.orderId) {
+      const order = await Order.findById(req.body.orderId);
+      
+      if (order && order.status === "Cancelled") {
+       return res.status(400).json({
+        message: "Cannot process payment for cancelled order",
+     });
+       }
+}
 
     // 🔒 Calculate total from DB (authoritative)
     let totalAmount = 0;
