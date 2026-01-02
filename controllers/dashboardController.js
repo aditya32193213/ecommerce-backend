@@ -1,11 +1,13 @@
 import Product from "../models/productModel.js";
 import Favorite from "../models/favoriteModel.js";
 import CartItem from "../models/cartModel.js";
+import Order from "../models/orderModel.js";
+import User from "../models/userModel.js";
 
 // @desc    Get Dashboard Data (Optimized)
 // @route   GET /api/dashboard
 // @access  Private
-export const getDashboard = async (req, res) => {
+export const getUserDashboard = async (req, res) => {
   const userId = req.user._id;
 
   try {
@@ -55,3 +57,57 @@ export const getDashboard = async (req, res) => {
     res.status(500).json({ message: "Server Error", error: error.message });
   }
 };
+
+export const getAdminDashboard = async (req, res) => {
+  try {
+    const [
+      totalOrders,
+      totalUsers,
+      totalProducts,
+      revenueAgg,
+      ordersByDate
+    ] = await Promise.all([
+      Order.countDocuments(),
+      User.countDocuments(),
+      Product.countDocuments(),
+
+      // ✅ MongoDB-side revenue calculation
+      Order.aggregate([
+        {
+          $group: {
+            _id: null,
+            totalRevenue: { $sum: "$totalPrice" }
+          }
+        }
+      ]),
+
+      Order.aggregate([
+        {
+          $group: {
+            _id: {
+              $dateToString: {
+                format: "%Y-%m-%d",
+                date: "$createdAt"
+              }
+            },
+            orders: { $sum: 1 },
+            revenue: { $sum: "$totalPrice" }
+          }
+        },
+        { $sort: { _id: 1 } }
+      ])
+    ]);
+
+    res.json({
+      totalOrders,
+      totalUsers,
+      totalProducts,
+      totalRevenue: revenueAgg[0]?.totalRevenue || 0,
+      ordersByDate
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Failed to fetch admin stats" });
+  }
+};
+
