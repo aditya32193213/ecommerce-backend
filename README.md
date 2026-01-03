@@ -1,4 +1,4 @@
-# 🛒 EE-Commerce Backend Application 
+# 🛒 E-Commerce Backend Application 
 Node.js | Express.js | MongoDB | Mongoose | Swagger | MVC Architecture
 
 This project is a production-ready backend for an E-Commerce application, built as part of the Full Stack curriculum (Module-4).
