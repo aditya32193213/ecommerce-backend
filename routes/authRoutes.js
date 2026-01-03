@@ -12,7 +12,7 @@ const router = express.Router();
  * @swagger
  * tags:
  *   name: Auth
- *   description: Authentication APIs
+ *   description: User authentication and password recovery APIs
  */
 
 /**
@@ -39,7 +39,7 @@ router.post("/register", register);
  * @swagger
  * /api/auth/login:
  *   post:
- *     summary: Login user & get token
+ *     summary: Login user and receive JWT token
  *     tags: [Auth]
  *     requestBody:
  *       required: true
@@ -59,7 +59,7 @@ router.post("/login", login);
  * @swagger
  * /api/auth/forgot-password:
  *   post:
- *     summary: Send password reset email (Mock)
+ *     summary: Send password reset link (mock implementation)
  *     tags: [Auth]
  *     requestBody:
  *       content:
@@ -71,30 +71,34 @@ router.post("/login", login);
  *                 type: string
  *     responses:
  *       200:
- *         description: Reset link sent
+ *         description: Password reset link sent
  */
 router.post("/forgot-password", forgotPassword);
 
 /**
  * @swagger
- * /api/auth/reset-password:
- *   post:
+ * /api/auth/reset-password/{token}:
+ *   put:
  *     summary: Reset password using token
  *     tags: [Auth]
+ *     parameters:
+ *       - in: path
+ *         name: token
+ *         required: true
+ *         schema:
+ *           type: string
  *     requestBody:
  *       content:
  *         application/json:
  *           schema:
  *             type: object
- *             required: [token, password]
+ *             required: [password]
  *             properties:
- *               token:
- *                 type: string
  *               password:
  *                 type: string
  *     responses:
  *       200:
- *         description: Password updated
+ *         description: Password updated successfully
  */
 router.put("/reset-password/:token", resetPassword);
 

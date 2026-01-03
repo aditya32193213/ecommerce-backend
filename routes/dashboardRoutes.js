@@ -1,4 +1,3 @@
-// src/routes/dashboardRoutes.js (New File)
 import express from "express";
 import { protect ,admin} from "../middleware/authMiddleware.js";
 import { getUserDashboard,getAdminDashboard } from "../controllers/dashboardController.js";

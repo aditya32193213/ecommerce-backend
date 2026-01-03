@@ -1,13 +1,20 @@
+/**
+ * Order Schema
+ * Represents a complete purchase order placed by a user
+ */
+
 import mongoose from "mongoose";
 
 const orderSchema = new mongoose.Schema(
   {
+    // User who placed the order
     user: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       required: true,
     },
 
+    // Ordered products snapshot
     orderItems: [
       {
         name: { type: String, required: true },
@@ -22,6 +29,7 @@ const orderSchema = new mongoose.Schema(
       },
     ],
 
+    // Shipping address details
     shippingAddress: {
       address: { type: String, required: true },
       city: { type: String, required: true },
@@ -29,11 +37,13 @@ const orderSchema = new mongoose.Schema(
       country: { type: String, required: true },
     },
 
+    // Payment method used
     paymentMethod: {
       type: String,
       required: true,
     },
 
+    // Payment gateway response
     paymentResult: {
       id: String,
       status: String,
@@ -41,39 +51,20 @@ const orderSchema = new mongoose.Schema(
       email_address: String,
     },
 
-    // ✅ REQUIRED (was missing)
-    itemsPrice: {
-      type: Number,
-      required: true,
-      default: 0,
-    },
+    // Price breakdown
+    itemsPrice: { type: Number, required: true, default: 0 },
+    taxPrice: { type: Number, required: true, default: 0 },
+    shippingPrice: { type: Number, required: true, default: 0 },
+    totalPrice: { type: Number, required: true, default: 0 },
 
-    taxPrice: {
-      type: Number,
-      required: true,
-      default: 0,
-    },
-
-    shippingPrice: {
-      type: Number,
-      required: true,
-      default: 0,
-    },
-
-    totalPrice: {
-      type: Number,
-      required: true,
-      default: 0,
-    },
-
-    // ✅ EXPANDED STATUS
+    // Order status tracking
     status: {
       type: String,
       enum: ["Placed", "Processing", "Shipped", "Delivered", "Cancelled"],
       default: "Placed",
     },
 
-    // ✅ STATUS HISTORY (AUDIT TRAIL)
+    // Status history for audit
     statusHistory: [
       {
         status: {
@@ -87,22 +78,11 @@ const orderSchema = new mongoose.Schema(
       },
     ],
 
-    isPaid: {
-      type: Boolean,
-      default: false,
-    },
-    paidAt: {
-      type: Date,
-    },
-
-    // ✅ BACKWARD COMPATIBILITY
-    isDelivered: {
-      type: Boolean,
-      default: false,
-    },
-    deliveredAt: {
-      type: Date,
-    },
+    // Payment & delivery flags
+    isPaid: { type: Boolean, default: false },
+    paidAt: { type: Date },
+    isDelivered: { type: Boolean, default: false },
+    deliveredAt: { type: Date },
   },
   { timestamps: true }
 );

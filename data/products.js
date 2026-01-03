@@ -1,3 +1,19 @@
+/**
+ * ============================================================
+ * File: products.js
+ * ------------------------------------------------------------
+ * Purpose:
+ * Contains static sample product data used for database seeding.
+ *
+ * This data mimics real-world e-commerce products and is
+ * imported by seed scripts to populate the Products collection.
+ *
+ * NOTE:
+ * - This file does NOT contain any business logic
+ * - It is used only for development/testing
+ * ============================================================
+ */
+
 export default [
   {
     

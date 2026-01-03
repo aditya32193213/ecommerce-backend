@@ -1,10 +1,34 @@
+/**
+ * ============================================================
+ * File: orderController.js
+ * ------------------------------------------------------------
+ * Purpose:
+ * Handles order lifecycle management:
+ * - Create order with stock deduction
+ * - Cancel order with stock restoration
+ * - Update order status (Admin)
+ * - Generate invoice PDF
+ * - Fetch user/admin orders
+ *
+ * Key Concepts:
+ * - MongoDB transactions for stock safety
+ * - Idempotency guards
+ * - Strict authorization checks
+ * ============================================================
+ */
+
 import mongoose from "mongoose";
 import PDFDocument from "pdfkit";
 import Order from "../models/orderModel.js";
 import Product from "../models/productModel.js";
-import User from "../models/userModel.js"
+import User from "../models/userModel.js";
 
-// ================= CREATE ORDER =================
+/**
+ * ------------------------------------------------------------
+ * CREATE ORDER
+ * ------------------------------------------------------------
+ * Creates a new order and deducts stock atomically
+ */
 export const createOrder = async (req, res) => {
   const {
     orderItems,
@@ -23,12 +47,14 @@ export const createOrder = async (req, res) => {
     throw new Error("No order items");
   }
 
+  // Start transaction to ensure stock consistency
   const session = await mongoose.startSession();
   session.startTransaction();
 
   try {
     let subtotal = 0;
 
+    // Validate stock & calculate subtotal
     for (const item of orderItems) {
       const product = await Product.findById(item.product).session(session);
 
@@ -37,38 +63,33 @@ export const createOrder = async (req, res) => {
       }
 
       subtotal += product.price * item.qty;
-
       product.countInStock -= item.qty;
       await product.save({ session });
     }
 
-    // ================= APPLY COUPON =================
+    // Apply coupon logic
     let discount = 0;
     if (couponCode === "FLAT50") discount = 50;
     else if (couponCode === "WELCOME10") discount = subtotal * 0.1;
 
-    let totalPrice = subtotal - discount;
-    if (totalPrice < 0) totalPrice = 0;
+    let totalPrice = Math.max(subtotal - discount, 0);
 
+    // Create order document
     const order = new Order({
       orderItems,
       user: req.user._id,
       shippingAddress,
       paymentMethod,
-
       itemsPrice: subtotal,
       taxPrice: taxPrice || 0,
       shippingPrice: shippingPrice || 0,
       totalPrice,
-
       couponCode: couponCode || null,
-
       isPaid: isPaid || false,
       paidAt: paidAt || null,
       paymentResult: paymentResult || {},
-
       status: "Placed",
-      statusHistory: [{ status: "Placed" , date: new Date() }],
+      statusHistory: [{ status: "Placed", date: new Date() }],
     });
 
     const createdOrder = await order.save({ session });
@@ -85,15 +106,24 @@ export const createOrder = async (req, res) => {
   }
 };
 
-// ================= GET MY ORDERS =================
+/**
+ * ------------------------------------------------------------
+ * GET USER ORDERS
+ * ------------------------------------------------------------
+ * Fetches orders for the logged-in user
+ */
 export const getMyOrders = async (req, res) => {
   const orders = await Order.find({ user: req.user._id }).sort({ createdAt: -1 });
   res.json(orders);
 };
 
-// ================= GET ORDER BY ID =================
+/**
+ * ------------------------------------------------------------
+ * GET ORDER BY ID
+ * ------------------------------------------------------------
+ * Fetches a single order with user info
+ */
 export const getOrderById = async (req, res) => {
-  // ✅ Prevent invalid ObjectId crashes
   if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
     return res.status(400).json({ message: "Invalid order ID" });
   }
@@ -110,16 +140,17 @@ export const getOrderById = async (req, res) => {
   res.json(order);
 };
 
-// ================= UPDATE ORDER STATUS (ADMIN) =================
+/**
+ * ------------------------------------------------------------
+ * UPDATE ORDER STATUS (ADMIN)
+ * ------------------------------------------------------------
+ * Advances order through predefined lifecycle
+ */
 export const updateOrderStatus = async (req, res) => {
   try {
     const order = await Order.findById(req.params.id);
+    if (!order) return res.status(404).json({ message: "Order not found" });
 
-    if (!order) {
-      return res.status(404).json({ message: "Order not found" });
-    }
-
-    // ✅ CRITICAL GUARD
     if (order.status === "Cancelled") {
       return res.status(400).json({
         message: "Cancelled orders cannot be updated",
@@ -133,13 +164,12 @@ export const updateOrderStatus = async (req, res) => {
     };
 
     const nextStatus = nextStatusMap[order.status];
-
     if (!nextStatus) {
       return res.status(400).json({ message: "Order cannot be updated further" });
     }
 
     order.status = nextStatus;
-    order.statusHistory.push({ status: nextStatus ,date:new Date() });
+    order.statusHistory.push({ status: nextStatus, date: new Date() });
 
     if (nextStatus === "Delivered") {
       order.isDelivered = true;
@@ -148,26 +178,25 @@ export const updateOrderStatus = async (req, res) => {
 
     await order.save();
     res.json(order);
-  } catch (error) {
-    console.error(error);
+  } catch {
     res.status(500).json({ message: "Failed to update order status" });
   }
 };
 
-// ================= CANCEL ORDER + RESTORE STOCK =================
+/**
+ * ------------------------------------------------------------
+ * CANCEL ORDER
+ * ------------------------------------------------------------
+ * Cancels order and restores stock
+ */
 export const cancelOrder = async (req, res) => {
   const order = await Order.findById(req.params.id);
   if (!order) throw new Error("Order not found");
 
-  // ✅ IDEMPOTENCY GUARD
-  if (order.status === "Cancelled") {
-    return res.json(order);
-  }
+  if (order.status === "Cancelled") return res.json(order);
+  if (order.isDelivered) throw new Error("Delivered orders cannot be cancelled");
 
-  if (order.isDelivered) {
-    throw new Error("Delivered orders cannot be cancelled");
-  }
-
+  // Restore stock
   for (const item of order.orderItems) {
     const product = await Product.findById(item.product);
     if (product) {
@@ -177,13 +206,17 @@ export const cancelOrder = async (req, res) => {
   }
 
   order.status = "Cancelled";
-  order.statusHistory.push({ status: "Cancelled", date: new Date()});
+  order.statusHistory.push({ status: "Cancelled", date: new Date() });
 
   await order.save();
   res.json(order);
 };
 
-// ================= ADMIN PAGINATED ORDERS =================
+/**
+ * ------------------------------------------------------------
+ * ADMIN ORDERS (PAGINATED)
+ * ------------------------------------------------------------
+ */
 export const getAdminOrders = async (req, res) => {
   try {
     const page = Number(req.query.page) || 1;
@@ -191,7 +224,6 @@ export const getAdminOrders = async (req, res) => {
 
     let userFilter = {};
 
-    // 🔍 FIX: Search users first
     if (req.query.keyword) {
       const users = await User.find({
         name: { $regex: req.query.keyword, $options: "i" },
@@ -216,13 +248,17 @@ export const getAdminOrders = async (req, res) => {
       pages: Math.ceil(count / limit),
       total: count,
     });
-  } catch (error) {
-    console.error(error);
+  } catch {
     res.status(500).json({ message: "Failed to fetch admin orders" });
   }
 };
 
-// ================= INVOICE PDF =================
+/**
+ * ------------------------------------------------------------
+ * GENERATE INVOICE (PDF)
+ * ------------------------------------------------------------
+ * Generates downloadable invoice for order
+ */
 export const generateInvoice = async (req, res) => {
   const order = await Order.findById(req.params.id).populate(
     "user",
@@ -234,7 +270,7 @@ export const generateInvoice = async (req, res) => {
     throw new Error("Order not found");
   }
 
-  // ✅ allow owner OR admin
+  // Allow order owner or admin
   if (
     order.user._id.toString() !== req.user._id.toString() &&
     !req.user.isAdmin
@@ -279,7 +315,7 @@ export const generateInvoice = async (req, res) => {
   doc.fontSize(14).text("Order Items", { underline: true });
   doc.moveDown(0.5);
   order.orderItems.forEach((item) => {
-    doc.fontSize(12).text(`${item.name}  x${item.qty}  -  $${item.price}`);
+    doc.fontSize(12).text(`${item.name} x${item.qty} - $${item.price}`);
   });
 
   doc.moveDown();

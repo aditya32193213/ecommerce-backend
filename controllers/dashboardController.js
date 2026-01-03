@@ -1,10 +1,26 @@
+/**
+ * ============================================================
+ * File: dashboardController.js
+ * ------------------------------------------------------------
+ * Purpose:
+ * Provides dashboard analytics for:
+ * - Users (shopping overview)
+ * - Admins (business insights)
+ * ============================================================
+ */
+
 import Product from "../models/productModel.js";
 import Favorite from "../models/favoriteModel.js";
 import CartItem from "../models/cartModel.js";
 import Order from "../models/orderModel.js";
 import User from "../models/userModel.js";
 
-// ================= USER DASHBOARD =================
+/**
+ * USER DASHBOARD
+ * - Featured products
+ * - Categories
+ * - Cart & wishlist counts
+ */
 export const getUserDashboard = async (req, res) => {
   const userId = req.user._id;
 
@@ -22,7 +38,6 @@ export const getUserDashboard = async (req, res) => {
         .lean(),
 
       Product.distinct("category"),
-
       CartItem.countDocuments({ user: userId }),
       Favorite.countDocuments({ user: userId }),
     ]);
@@ -30,23 +45,23 @@ export const getUserDashboard = async (req, res) => {
     res.status(200).json({
       success: true,
       data: {
-        counts: {
-          cart: cartCount,
-          wishlist: wishlistCount,
-        },
+        counts: { cart: cartCount, wishlist: wishlistCount },
         categories,
         featuredProducts,
       },
     });
   } catch (error) {
-    res.status(500).json({
-      message: "Server Error",
-      error: error.message,
-    });
+    res.status(500).json({ message: "Server Error" });
   }
 };
 
-// ================= ADMIN DASHBOARD =================
+/**
+ * ADMIN DASHBOARD
+ * - Orders
+ * - Revenue
+ * - Users
+ * - Product statistics
+ */
 export const getAdminDashboard = async (req, res) => {
   try {
     const [
@@ -61,38 +76,18 @@ export const getAdminDashboard = async (req, res) => {
       User.countDocuments(),
       Product.countDocuments(),
 
-      // ✅ TOTAL REVENUE (paid + not cancelled)
+      // Revenue from paid & non-cancelled orders
       Order.aggregate([
-        {
-          $match: {
-            isPaid: true,
-            status: { $ne: "Cancelled" },
-          },
-        },
-        {
-          $group: {
-            _id: null,
-            totalRevenue: { $sum: "$totalPrice" },
-          },
-        },
+        { $match: { isPaid: true, status: { $ne: "Cancelled" } } },
+        { $group: { _id: null, totalRevenue: { $sum: "$totalPrice" } } },
       ]),
 
-      // ✅ ORDERS BY DATE (MATCHES REVENUE LOGIC)
+      // Orders over time
       Order.aggregate([
-        {
-          $match: {
-            isPaid: true,
-            status: { $ne: "Cancelled" },
-          },
-        },
+        { $match: { isPaid: true, status: { $ne: "Cancelled" } } },
         {
           $group: {
-            _id: {
-              $dateToString: {
-                format: "%Y-%m-%d",
-                date: "$createdAt",
-              },
-            },
+            _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
             orders: { $sum: 1 },
             revenue: { $sum: "$totalPrice" },
           },
@@ -100,14 +95,9 @@ export const getAdminDashboard = async (req, res) => {
         { $sort: { _id: 1 } },
       ]),
 
-      // ✅ ORDERS BY STATUS (includes Cancelled for analytics)
+      // Order status distribution
       Order.aggregate([
-        {
-          $group: {
-            _id: "$status",
-            count: { $sum: 1 },
-          },
-        },
+        { $group: { _id: "$status", count: { $sum: 1 } } },
       ]),
     ]);
 
@@ -120,9 +110,6 @@ export const getAdminDashboard = async (req, res) => {
       ordersByStatus,
     });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({
-      message: "Failed to fetch admin stats",
-    });
+    res.status(500).json({ message: "Failed to fetch admin stats" });
   }
 };

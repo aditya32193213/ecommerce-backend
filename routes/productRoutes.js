@@ -1,8 +1,22 @@
+import express from "express";
+import { protect, admin } from "../middleware/authMiddleware.js";
+import {
+  getAllProducts,
+  getProductsByCategory,
+  getAllCategories,
+  getProductById,
+  deleteProduct,
+  createProduct,
+  updateProduct,
+} from "../controllers/productController.js";
+
+const router = express.Router();
+
 /**
  * @swagger
  * tags:
  *   name: Products
- *   description: Product management APIs
+ *   description: Product browsing and management APIs
  */
 
 /**
@@ -13,7 +27,7 @@
  *     tags: [Products]
  *     responses:
  *       200:
- *         description: Returns all products
+ *         description: List of all products
  *         content:
  *           application/json:
  *             schema:
@@ -21,75 +35,79 @@
  *               items:
  *                 $ref: "#/components/schemas/Product"
  */
+router.get("/", getAllProducts);
 
 /**
  * @swagger
- * /api/products/{category}:
+ * /api/products:
+ *   post:
+ *     summary: Create a new product (Admin only)
+ *     tags: [Products]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: "#/components/schemas/Product"
+ *     responses:
+ *       201:
+ *         description: Product created successfully
+ */
+router.post("/", protect, admin, createProduct);
+
+/**
+ * @swagger
+ * /api/products/categories:
+ *   get:
+ *     summary: Get all unique product categories
+ *     tags: [Products]
+ *     responses:
+ *       200:
+ *         description: List of categories
+ */
+router.get("/categories", getAllCategories);
+
+/**
+ * @swagger
+ * /api/products/category/{category}:
  *   get:
  *     summary: Get products by category
  *     tags: [Products]
  *     parameters:
  *       - in: path
  *         name: category
+ *         required: true
  *         schema:
  *           type: string
- *         required: true
- *         description: Category to filter products
  *     responses:
  *       200:
- *         description: List of products in that category
- *       404:
- *         description: No products found for this category
- */
-import express from "express";
-// 1. IMPORT MIDDLEWARE (Fixing the missing import error)
-import { protect, admin } from "../middleware/authMiddleware.js"; 
-import {
-  getAllProducts,
-  getProductsByCategory,
-  getAllCategories,
-  getProductById,
-  deleteProduct,
-  createProduct,
-  updateProduct
-} from "../controllers/productController.js";
-
-const router = express.Router();
-
-/**
- * @route   GET /api/products
- * @desc    Get all products
- * @route   POST /api/products
- * @desc    Create a product (Admin only)
- */
-router.route("/")
-  .get(getAllProducts)
-  .post(protect, admin, createProduct); // <--- FIXED: Added Create Route
-
-/**
- * @route   GET /api/products/categories
- * @desc    Get all unique categories
- */
-router.get("/categories", getAllCategories);
-
-
-/**
- * @route   GET /api/products/:category
- * @desc    Get products by category
- * @note    We place this specific GET route before the generic /:id route 
- * to avoid ID collisions if needed, though usually IDs are unique.
+ *         description: Products filtered by category
  */
 router.get("/category/:category", getProductsByCategory);
 
 /**
- * @route   GET / DELETE / PUT /api/products/:id
- * @desc    Admin operations (Delete, Update)
+ * @swagger
+ * /api/products/{id}:
+ *   get:
+ *     summary: Get product by ID
+ *     tags: [Products]
+ *   delete:
+ *     summary: Delete product (Admin only)
+ *     tags: [Products]
+ *     security:
+ *       - bearerAuth: []
+ *   put:
+ *     summary: Update product (Admin only)
+ *     tags: [Products]
+ *     security:
+ *       - bearerAuth: []
  */
 router
   .route("/:id")
-  .get(getProductById) // Optional: Standard REST fetch
-  .delete(protect, admin, deleteProduct) // Admin delete
-  .put(protect, admin, updateProduct);   // Admin update
-
+  .get(getProductById)
+  .delete(protect, admin, deleteProduct)
+  .put(protect, admin, updateProduct);
 
 export default router;

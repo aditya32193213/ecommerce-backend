@@ -1,6 +1,21 @@
+/**
+ * ============================================================
+ * File: db.js
+ * ------------------------------------------------------------
+ * Purpose:
+ * Establishes connection to MongoDB
+ *
+ * Performs:
+ * - Environment validation
+ * - Safe connection handling
+ * - Graceful failure on error
+ * ============================================================
+ */
+
 import mongoose from "mongoose";
 
 const connectDB = async () => {
+  // Ensure critical environment variables exist
   const requiredEnvs = ["MONGO_URI", "JWT_SECRET", "STRIPE_SECRET_KEY"];
   const missing = requiredEnvs.filter((env) => !process.env[env]);
 

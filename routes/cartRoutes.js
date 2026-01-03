@@ -1,97 +1,73 @@
-/**
- * @swagger
- * tags:
- *   name: Cart
- *   description: Cart management APIs
- */
-
-/**
- * @swagger
- * /api/cart:
- *   get:
- *     summary: Get all cart items
- *     tags: [Cart]
- *     responses:
- *       200:
- *         description: List of cart items
- *         content:
- *           application/json:
- *             schema:
- *               type: array
- *               items:
- *                 $ref: "#/components/schemas/CartItem"
- */
-
-/**
- * @swagger
- * /api/cart:
- *   post:
- *     summary: Add an item to cart
- *     tags: [Cart]
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             $ref: "#/components/schemas/AddCartInput"
- *     responses:
- *       201:
- *         description: Item added to cart
- *       400:
- *         description: Invalid productId
- *       404:
- *         description: Product not found
- */
-
-/**
- * @swagger
- * /api/cart/{id}:
- *   delete:
- *     summary: Remove item from cart
- *     tags: [Cart]
- *     parameters:
- *       - in: path
- *         name: id
- *         schema:
- *           type: string
- *         required: true
- *         description: ID of the cart item
- *     responses:
- *       200:
- *         description: Item removed successfully
- *       404:
- *         description: Cart item not found
- */
 import express from "express";
 import {
   addToCart,
   getCartItems,
   removeCartItem,
   updateCartItem,
-  clearUserCart
+  clearUserCart,
 } from "../controllers/cartController.js";
 import { validateAddToCart } from "../middleware/validators/cartValidator.js";
 import { protect } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
+/**
+ * @swagger
+ * tags:
+ *   name: Cart
+ *   description: Shopping cart APIs
+ */
+
 router.use(protect);
 
-// Add item
-router.post("/", validateAddToCart, addToCart);
-
-// Get cart
+/**
+ * @swagger
+ * /api/cart:
+ *   get:
+ *     summary: Get logged-in user's cart items
+ *     tags: [Cart]
+ *     security:
+ *       - bearerAuth: []
+ */
 router.get("/", getCartItems);
 
-// Update quantity (✅ productId)
+/**
+ * @swagger
+ * /api/cart:
+ *   post:
+ *     summary: Add product to cart
+ *     tags: [Cart]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: "#/components/schemas/AddCartInput"
+ */
+router.post("/", validateAddToCart, addToCart);
+
+/**
+ * @swagger
+ * /api/cart/{productId}:
+ *   put:
+ *     summary: Update cart item quantity
+ *     tags: [Cart]
+ *   delete:
+ *     summary: Remove product from cart
+ *     tags: [Cart]
+ */
 router.put("/:productId", updateCartItem);
-
-// Clear the cart
-router.delete("/", clearUserCart);
-
-// Remove item
 router.delete("/:productId", removeCartItem);
 
-
+/**
+ * @swagger
+ * /api/cart:
+ *   delete:
+ *     summary: Clear entire cart
+ *     tags: [Cart]
+ */
+router.delete("/", clearUserCart);
 
 export default router;
