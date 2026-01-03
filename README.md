@@ -31,17 +31,17 @@ Response schemas
 #### 1. Swagger Overview
 Displays all available API endpoints grouped by modules such as Auth, Products, Cart, Orders, Payments, and Users.
 
-> *(Insert screenshot: swagger-overview.png)*
+> ![Swagger Overview Screenshot](./screenshots/swagger-overview.png)
 
 #### 2. Authorization using JWT
 Shows JWT bearer authentication configuration for accessing protected APIs.
 
-> *(Insert screenshot: swagger-authorization.png)*
+> ![Swagger Authorization Screenshot](./screenshots/swagger-authorization.png)
 
 #### 3. API Testing using “Try it out”
 Demonstrates real-time API testing directly from Swagger UI.
 
-> *(Insert screenshot: swagger-try-it-out.png)*
+> ![Swagger Try it out Screenshot](./screenshots/swagger-try-it-out.png)
 
 ### 🛡 Security
 Protected routes are secured using JWT-based authentication and role-based access control.
