@@ -1,3 +1,23 @@
+/**
+ * ============================================================
+ * File: userController.js
+ * ------------------------------------------------------------
+ * Purpose:
+ * Handles user profile, address management, and admin
+ * user management operations.
+ *
+ * Responsibilities:
+ * - User profile read/update
+ * - Address CRUD with normalization
+ * - User meta (cart & wishlist counts)
+ * - Admin user management
+ *
+ * Design Notes:
+ * - Address normalization ensures frontend ↔ DB compatibility
+ * - Password hashing handled at model level
+ * ============================================================
+ */
+
 import User from "../models/userModel.js";
 import jwt from "jsonwebtoken";
 import Favorite from "../models/favoriteModel.js";
@@ -6,6 +26,10 @@ import Cart from "../models/cartModel.js";
 // ===================================
 // HELPER: Normalize frontend → DB
 // ===================================
+/**
+ * Converts frontend address format
+ * into database-friendly structure
+ */
 const normalizeIncomingAddress = (body) => ({
   name: body.name || "",
   phone: body.phone || "",
@@ -19,6 +43,10 @@ const normalizeIncomingAddress = (body) => ({
 // ===================================
 // HELPER: Normalize DB → Frontend
 // ===================================
+/**
+ * Converts database address format
+ * into frontend-friendly structure
+ */
 const normalizeOutgoingAddress = (addr = {}) => ({
   _id: addr._id,
   name: addr.name || "",
@@ -60,20 +88,25 @@ export const getUserProfile = async (req, res) => {
 export const updateUserProfile = async (req, res) => {
   try {
     const user = await User.findById(req.user._id);
-
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
 
+    // Update basic profile fields
     user.name = req.body.name || user.name;
     user.email = req.body.email?.toLowerCase() || user.email;
 
+    /**
+     * Password update:
+     * - Hashing handled by model pre-save hook
+     */
     if (req.body.password) {
       user.password = req.body.password;
     }
 
     const updatedUser = await user.save();
 
+    // Re-issue JWT after profile update
     const token = jwt.sign(
       { id: updatedUser._id },
       process.env.JWT_SECRET || "secret",
@@ -104,11 +137,11 @@ export const saveAddress = async (req, res) => {
 
     const address = normalizeIncomingAddress(req.body);
 
-    // ✅ Relaxed but correct validation
+    /**
+     * Minimal validation to ensure usable address
+     */
     if (!address.street || !address.city || !address.zip) {
-      return res.status(400).json({
-        message: "Incomplete address data",
-      });
+      return res.status(400).json({ message: "Incomplete address data" });
     }
 
     user.addresses.push(address);
@@ -137,6 +170,7 @@ export const updateAddress = async (req, res) => {
 
     const updated = normalizeIncomingAddress(req.body);
 
+    // Safe field-level updates
     address.name = updated.name || address.name;
     address.phone = updated.phone || address.phone;
     address.street = updated.street || address.street;
@@ -165,6 +199,7 @@ export const deleteAddress = async (req, res) => {
     const user = await User.findById(req.user._id);
     if (!user) return res.status(404).json({ message: "User not found" });
 
+    // Remove address by ID
     user.addresses = user.addresses.filter(
       (addr) => addr._id.toString() !== req.params.addressId
     );
@@ -189,6 +224,7 @@ export const getUserMeta = async (req, res) => {
     const userId = req.user?._id;
     if (!userId) return res.status(401).json({ message: "Unauthorized" });
 
+    // Calculate total cart quantity
     const cartDocs = await Cart.find({ user: userId });
     const cartCount = cartDocs.reduce(
       (sum, item) => sum + (item.qty || 0),
@@ -204,7 +240,9 @@ export const getUserMeta = async (req, res) => {
   }
 };
 
-
+// ===================================
+// ADMIN: GET USERS (Paginated)
+// ===================================
 export const getAdminUsers = async (req, res) => {
   try {
     const page = Number(req.query.page) || 1;
@@ -214,8 +252,8 @@ export const getAdminUsers = async (req, res) => {
       ? {
           $or: [
             { name: { $regex: req.query.keyword, $options: "i" } },
-            { email: { $regex: req.query.keyword, $options: "i" } }
-          ]
+            { email: { $regex: req.query.keyword, $options: "i" } },
+          ],
         }
       : {};
 
@@ -226,14 +264,14 @@ export const getAdminUsers = async (req, res) => {
         .sort({ createdAt: -1 })
         .limit(limit)
         .skip(limit * (page - 1))
-        .lean() // ✅ performance optimization
+        .lean(), // performance optimization
     ]);
 
     res.json({
       users,
       page,
       pages: Math.ceil(count / limit),
-      total: count
+      total: count,
     });
   } catch (error) {
     console.error(error);
@@ -242,17 +280,16 @@ export const getAdminUsers = async (req, res) => {
 };
 
 // ===================================
-// TOGGLE ADMIN ROLE (ADMIN ONLY)
+// ADMIN: TOGGLE ADMIN ROLE
 // ===================================
 export const toggleAdminRole = async (req, res) => {
   try {
     const user = await User.findById(req.params.id);
+    if (!user) return res.status(404).json({ message: "User not found" });
 
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
-
-    // ❗ Prevent self-demotion
+    /**
+     * Prevent admin from demoting themselves
+     */
     if (user._id.toString() === req.user._id.toString()) {
       return res
         .status(400)
@@ -273,17 +310,16 @@ export const toggleAdminRole = async (req, res) => {
 };
 
 // ===================================
-// DELETE USER (ADMIN ONLY)
+// ADMIN: DELETE USER
 // ===================================
 export const deleteUser = async (req, res) => {
   try {
     const user = await User.findById(req.params.id);
+    if (!user) return res.status(404).json({ message: "User not found" });
 
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
-
-    // ❗ Prevent self-delete
+    /**
+     * Prevent admin from deleting themselves
+     */
     if (user._id.toString() === req.user._id.toString()) {
       return res
         .status(400)
@@ -291,7 +327,6 @@ export const deleteUser = async (req, res) => {
     }
 
     await user.deleteOne();
-
     res.json({ message: "User deleted successfully" });
   } catch (error) {
     console.error("Delete user error:", error);
