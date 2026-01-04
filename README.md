@@ -218,7 +218,7 @@ npm start
 - Backend-frontend integration
 - Deployment verification
 
-(Link to be added)
+- 🔗 **[https://drive.google.com/file/d/1mjTUGqEvr8kVQJoFOR4L8DkQ2A0rxzFB/view?usp=sharing](https://drive.google.com/file/d/1mjTUGqEvr8kVQJoFOR4L8DkQ2A0rxzFB/view?usp=sharing)**
 
 ---
 
